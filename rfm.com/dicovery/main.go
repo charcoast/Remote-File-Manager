@@ -26,11 +26,12 @@ func main() {
 	wg.Wait()
 }
 
-func listenToServices(wg *sync.WaitGroup) {
+func listenToServices(wg *sync.WaitGroup) error {
 	serviceListener, err := net.Listen("tcp", ":"+strconv.Itoa(DISCOVERY_PORT))
 	defer serviceListener.Close()
+	defer wg.Done()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for {
@@ -38,30 +39,28 @@ func listenToServices(wg *sync.WaitGroup) {
 		if err != nil {
 			fmt.Println("ERRO AO INICIAR CONEXÃO COM UM SERVIÇO")
 			fmt.Println(err)
-			break
+			continue
 		}
 
 		go handleServiceDiscovery(conn)
 	}
 
-	wg.Done()
 }
 
-func handleServiceDiscovery(conn net.Conn) {
+func handleServiceDiscovery(conn net.Conn) error {
 	defer conn.Close()
 
 	netData, err := bufio.NewReader(conn).ReadString('\n')
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 
 	featureRegister := FeatureRegister{}
 
 	err = json.Unmarshal([]byte(netData), &featureRegister)
 	if err != nil {
-		return
+		return err
 	}
 
 	var addr = conn.RemoteAddr().(*net.TCPAddr)
@@ -70,14 +69,17 @@ func handleServiceDiscovery(conn net.Conn) {
 
 	services = append(services, service)
 	fmt.Printf("\n\nServiço adicionado. IP/Porta: %s Prefixos: %s", service.getIpAndPort(), strings.Join(service.feature.Prefixes, ","))
+
+	return nil
 }
 
-func listenToClient(wg *sync.WaitGroup) {
+func listenToClient(wg *sync.WaitGroup) error {
 	clientListener, err := net.Listen("tcp", ":"+strconv.Itoa(CLIENT_PORT))
 	defer clientListener.Close()
+	defer wg.Done()
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for {
@@ -91,7 +93,6 @@ func listenToClient(wg *sync.WaitGroup) {
 		go handleClientCommand(conn)
 	}
 
-	wg.Done()
 }
 
 func handleClientCommand(conn net.Conn) {

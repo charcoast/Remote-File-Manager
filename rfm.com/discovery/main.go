@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-const DISCOVERY_PORT = 7070
-const CLIENT_PORT = 9090
+const DiscoveryPort = 7070
+const ClientPort = 9090
 
 var services []Service
 
@@ -23,11 +24,13 @@ func main() {
 	go listenToClient(&wg)
 	go listenToServices(&wg)
 
+	fmt.Println("****RUNNING****")
+
 	wg.Wait()
 }
 
 func listenToServices(wg *sync.WaitGroup) error {
-	serviceListener, err := net.Listen("tcp", ":"+strconv.Itoa(DISCOVERY_PORT))
+	serviceListener, err := net.Listen("tcp", ":"+strconv.Itoa(DiscoveryPort))
 	defer serviceListener.Close()
 	defer wg.Done()
 	if err != nil {
@@ -74,7 +77,7 @@ func handleServiceDiscovery(conn net.Conn) error {
 }
 
 func listenToClient(wg *sync.WaitGroup) error {
-	clientListener, err := net.Listen("tcp", ":"+strconv.Itoa(CLIENT_PORT))
+	clientListener, err := net.Listen("tcp", ":"+strconv.Itoa(ClientPort))
 	defer clientListener.Close()
 	defer wg.Done()
 
@@ -95,6 +98,39 @@ func listenToClient(wg *sync.WaitGroup) error {
 
 }
 
-func handleClientCommand(conn net.Conn) {
-	fmt.Println("Executando conexão do cliente")
+func handleClientCommand(conn net.Conn) error {
+
+	defer conn.Close()
+	netData, err := bufio.NewReader(conn).ReadString('\n')
+
+	fmt.Println("RECEBEU O COMANDO: " + netData)
+
+	if err != nil {
+		return err
+	}
+
+	var index = slices.IndexFunc(services, func(s Service) bool {
+		return slices.IndexFunc(s.feature.Prefixes, func(p string) bool { return p == netData }) != -1
+	})
+
+	if index == -1 {
+		fmt.Fprintf(conn, "NÃO HÁ SERVIÇO CAPAZ DE RESPONDER SUA SOLICITAÇÃO")
+		return nil
+	}
+
+	var service Service = services[index]
+
+	c, err := net.Dial("tcp", service.getIpAndPort())
+	defer c.Close()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Fprintf(c, netData) // Envia o texto pela conexão
+
+	message, _ := bufio.NewReader(c).ReadString('\n') // Aguarda resposta do servidor
+	fmt.Print("RCV: " + message)
+
+	return nil
 }

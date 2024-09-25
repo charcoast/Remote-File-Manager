@@ -102,7 +102,7 @@ func handleClientCommand(conn net.Conn) error {
 
 	defer conn.Close()
 	netData, err := bufio.NewReader(conn).ReadString('\n')
-
+	netData = strings.TrimSpace(netData)
 	fmt.Println("RECEBEU O COMANDO: " + netData)
 
 	if err != nil {

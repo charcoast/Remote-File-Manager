@@ -110,7 +110,7 @@ func handleClientCommand(conn net.Conn) error {
 	}
 
 	var index = slices.IndexFunc(services, func(s Service) bool {
-		return slices.IndexFunc(s.feature.Prefixes, func(p string) bool { return p == netData }) != -1
+		return slices.Contains(s.feature.Prefixes, netData)
 	})
 
 	if index == -1 {

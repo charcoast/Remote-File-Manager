@@ -127,7 +127,7 @@ func handleClientCommand(conn net.Conn) error {
 		return err
 	}
 
-	fmt.Fprintf(c, netData) // Envia o texto pela conexão
+	fmt.Fprintf(c, netData+"\n") // Envia o texto pela conexão
 
 	message, _ := bufio.NewReader(c).ReadString('\n') // Aguarda resposta do servidor
 	fmt.Print("RESPONDEU: " + message)

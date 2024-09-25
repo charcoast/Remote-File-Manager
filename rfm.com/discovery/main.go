@@ -132,5 +132,6 @@ func handleClientCommand(conn net.Conn) error {
 	message, _ := bufio.NewReader(c).ReadString('\n') // Aguarda resposta do servidor
 	fmt.Print("RESPONDEU: " + message)
 
+	fmt.Fprintf(conn, message+"\n")
 	return nil
 }

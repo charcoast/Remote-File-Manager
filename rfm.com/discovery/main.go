@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"net"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const DiscoveryPort = 7070
@@ -17,121 +16,83 @@ const ClientPort = 9090
 var services []Service
 
 func main() {
-	var wg sync.WaitGroup
 
-	wg.Add(2)
-
-	go listenToClient(&wg)
-	go listenToServices(&wg)
+	listenToClient()
+	listenToServices()
 
 	fmt.Println("****RUNNING****")
 
-	wg.Wait()
 }
 
-func listenToServices(wg *sync.WaitGroup) error {
-	serviceListener, err := net.Listen("tcp", ":"+strconv.Itoa(DiscoveryPort))
-	defer serviceListener.Close()
-	defer wg.Done()
-	if err != nil {
-		return err
-	}
+func listenToServices() {
 
-	for {
-		conn, err := serviceListener.Accept()
-		if err != nil {
-			fmt.Println("ERRO AO INICIAR CONEXÃO COM UM SERVIÇO")
-			fmt.Println(err)
-			continue
-		}
+	router := http.NewServeMux()
 
-		go handleServiceDiscovery(conn)
-	}
+	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
+		var featureRegister FeatureRegister
+		_ = json.NewDecoder(r.Body).Decode(&featureRegister)
+		statusCode, message := handleServiceDiscovery(r.RemoteAddr, featureRegister)
+
+		w.WriteHeader(statusCode)
+		w.Write([]byte(message))
+	})
+
+	http.ListenAndServe(":"+strconv.Itoa(DiscoveryPort), router)
 
 }
 
-func handleServiceDiscovery(conn net.Conn) error {
-	defer conn.Close()
+func handleServiceDiscovery(addr string, featureRegister FeatureRegister) (int, string) {
 
-	netData, err := bufio.NewReader(conn).ReadString('\n')
-
-	if err != nil {
-		return err
-	}
-
-	featureRegister := FeatureRegister{}
-
-	err = json.Unmarshal([]byte(netData), &featureRegister)
-	if err != nil {
-		return err
-	}
-
-	var addr = conn.RemoteAddr().(*net.TCPAddr)
-
-	service := Service{ip: addr.IP, port: featureRegister.Port, feature: Feature{Prefixes: featureRegister.Prefixes}}
+	service := Service{ip: addr, port: featureRegister.Port, feature: Feature{Prefixes: featureRegister.Prefixes}}
 
 	services = append(services, service)
-	fmt.Printf("\n\nServiço adicionado. IP/Porta: %s Prefixos: %s", service.getIpAndPort(), strings.Join(service.feature.Prefixes, ","))
-
-	return nil
+	message := fmt.Sprintf("\n\nServiço adicionado. IP/Porta: %s Prefixos: %s", service.getIpAndPort(), strings.Join(service.feature.Prefixes, ","))
+	fmt.Println(message)
+	return 200, message
 }
 
-func listenToClient(wg *sync.WaitGroup) error {
-	clientListener, err := net.Listen("tcp", ":"+strconv.Itoa(ClientPort))
-	defer clientListener.Close()
-	defer wg.Done()
+func listenToClient() {
+	router := http.NewServeMux()
 
-	if err != nil {
-		return err
-	}
+	router.HandleFunc("POST /command", func(w http.ResponseWriter, r *http.Request) {
+		var command Command
+		_ = json.NewDecoder(r.Body).Decode(&command)
+		statusCode, message := handleClientCommand(command.Command)
 
-	for {
-		conn, err := clientListener.Accept()
-		if err != nil {
-			fmt.Println("ERRO AO INICIAR CONEXÃO COM CLIENTE")
-			fmt.Println(err)
-			continue
-		}
+		w.WriteHeader(statusCode)
+		w.Write([]byte(message))
+	})
 
-		go handleClientCommand(conn)
-	}
-
+	http.ListenAndServe(":"+strconv.Itoa(ClientPort), router)
 }
 
-func handleClientCommand(conn net.Conn) error {
-
-	defer conn.Close()
-	netData, err := bufio.NewReader(conn).ReadString('\n')
-	netData = strings.TrimSpace(netData)
-	fmt.Println("RECEBEU O COMANDO: " + netData)
-
-	if err != nil {
-		return err
-	}
+func handleClientCommand(command string) (int, string) {
+	fmt.Println("RECEBEU O COMANDO: " + command)
 
 	var index = slices.IndexFunc(services, func(s Service) bool {
-		return slices.Contains(s.feature.Prefixes, netData)
+		return slices.Contains(s.feature.Prefixes, command)
 	})
 
 	if index == -1 {
-		fmt.Fprintf(conn, "NÃO HÁ SERVIÇO CAPAZ DE RESPONDER SUA SOLICITAÇÃO")
-		return nil
+		return 500, "NÃO HÁ SERVIÇO CAPAZ DE RESPONDER SUA SOLICITAÇÃO"
 	}
 
-	var service Service = services[index]
+	service := services[index]
+	url := fmt.Sprintf("http://%s:%s/", service.ip, service.port)
+	body, err := json.Marshal(Command{Command: command})
 
-	c, err := net.Dial("tcp", service.getIpAndPort())
-	defer c.Close()
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return 400, "FALHA AO DECODIFICAR COMANDO"
+	}
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+
+	if err != nil {
+		return 500, "NÃO FOI POSSÍVEL EXECUTAR O COMANDO"
 	}
 
-	fmt.Fprintf(c, netData+"\n") // Envia o texto pela conexão
+	var result string
+	_ = json.NewDecoder(resp.Body).Decode(&result)
+	fmt.Print("RESPONDEU: " + result)
 
-	message, _ := bufio.NewReader(c).ReadString('\n') // Aguarda resposta do servidor
-	fmt.Print("RESPONDEU: " + message)
-
-	fmt.Fprintf(conn, message+"\n")
-	return nil
+	return 200, result
 }

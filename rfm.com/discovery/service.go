@@ -1,16 +1,15 @@
 package main
 
 import (
-	"net"
 	"strconv"
 )
 
 type Service struct {
-	ip      net.IP
+	ip      string
 	port    int
 	feature Feature
 }
 
 func (service Service) getIpAndPort() string {
-	return service.ip.String() + ":" + strconv.Itoa(service.port)
+	return service.ip + ":" + strconv.Itoa(service.port)
 }

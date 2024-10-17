@@ -2,9 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"net"
+	"io"
+	"net/http"
 	"os"
+	"strings"
 )
 
 const DiscoveryPort = "9090"
@@ -15,23 +19,23 @@ func main() {
 	if len(arguments) == 1 { // Se não tiver argumentos retorna erro
 		fmt.Println("Enter with arguments host.")
 		return
+
 	}
-	fmt.Print("Digite um comando e pressione ENTER")
+	discoveryHost := arguments[1]
+	fmt.Println("Digite um comando e pressione ENTER")
 
 	for {
-		c, err := net.Dial("tcp", arguments[1]+":"+DiscoveryPort)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("\nCOMANDO: ")
 
-		reader := bufio.NewReader(os.Stdin) // Prepara o buffer de leitura
-		fmt.Println("\nMSG: ")
-		text, _ := reader.ReadString('\n') // Le um texto do teclado
-		fmt.Fprintf(c, text+"\n")          // Envia o texto pela conexão
+		text, _ := reader.ReadString('\n')
+		body, _ := json.Marshal(Command{Command: text})
+		resp, _ := http.Post("http://"+discoveryHost+":"+DiscoveryPort+"/command", "application/json", bytes.NewBuffer(body))
 
-		message, _ := bufio.NewReader(c).ReadString('\n') // Aguarda resposta do servidor
-		fmt.Print("RCV: " + message + "\n\n")
+		buf := new(strings.Builder)
+		_, _ = io.Copy(buf, resp.Body)
+
+		fmt.Println("RESULTADO: " + buf.String())
 	}
 
 }

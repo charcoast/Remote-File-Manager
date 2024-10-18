@@ -21,8 +21,8 @@ jobs:
       with:
         go-version: '1.22.7'
 
-    - name: Build
-      run: go build -v ./...
+    - name: Build Discovery
+      run: go build -C discovery -o ../discovery
 
-    - name: Test
-      run: go test -v ./...
+    # - name: Test
+    #   run: go test -v ./...

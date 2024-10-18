@@ -22,7 +22,7 @@ jobs:
         go-version: '1.22.7'
 
     - name: Build Discovery
-      run: go build -C discovery -o ../discovery
+      run: go build -C rfm.com/discovery -o ../../discovery
 
     # - name: Test
     #   run: go test -v ./...

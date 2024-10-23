@@ -1,6 +1,6 @@
 module rfm.com/executors/list
 
-go 1.23.2
+go 1.22.7
 
 require (
 	github.com/swaggo/http-swagger v1.3.4

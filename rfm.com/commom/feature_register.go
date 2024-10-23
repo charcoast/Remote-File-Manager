@@ -1,6 +1,6 @@
 package commom
 
 type FeatureRegister struct {
-	Port      int        `json:"port"`
-	Endpoints []Endpoint `json:"endpoints"`
+	Port     int               `json:"port"`
+	Commands map[string]string `json:"commands"`
 }

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"rfm.com/commom"
 	"strconv"
 )
 
 type Service struct {
-	ip      string
-	port    int
-	feature commom.Feature
+	ip       string
+	port     int
+	commands map[string]string
 }
 
 func (service Service) getIpAndPort() string {

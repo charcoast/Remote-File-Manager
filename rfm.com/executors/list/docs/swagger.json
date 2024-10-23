@@ -1,0 +1,124 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is one of the executors that works in the Remote-File-Manager application.",
+        "title": "Remote-File-Manager - List Executor",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/list": {
+            "get": {
+                "description": "Get the directories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the directories of the path",
+                "operationId": "get-directories",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Can not get the directories",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListException"
+                        }
+                    },
+                    "404": {
+                        "description": "Can not get the directories",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListException"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Get the directories b the path specified",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the directories of a given path",
+                "operationId": "get-directories",
+                "parameters": [
+                    {
+                        "description": "The informations about the directories",
+                        "name": "listRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Can not get the directories",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListException"
+                        }
+                    },
+                    "404": {
+                        "description": "Can not get the directories",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListException"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.ListException": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "type": "string"
+                },
+                "exception": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ListRequest": {
+            "type": "object",
+            "properties": {
+                "arguments": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

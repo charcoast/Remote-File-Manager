@@ -1,0 +1,84 @@
+basePath: /
+definitions:
+  model.ListException:
+    properties:
+      details:
+        type: string
+      exception:
+        type: string
+    type: object
+  model.ListRequest:
+    properties:
+      arguments:
+        items:
+          type: string
+        type: array
+      path:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is one of the executors that works in the Remote-File-Manager
+    application.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Remote-File-Manager - List Executor
+  version: "1.0"
+paths:
+  /list:
+    get:
+      consumes:
+      - application/json
+      description: Get the directories
+      operationId: get-directories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: Can not get the directories
+          schema:
+            $ref: '#/definitions/model.ListException'
+        "404":
+          description: Can not get the directories
+          schema:
+            $ref: '#/definitions/model.ListException'
+      summary: Get the directories of the path
+    post:
+      consumes:
+      - application/json
+      description: Get the directories b the path specified
+      operationId: get-directories
+      parameters:
+      - description: The informations about the directories
+        in: body
+        name: listRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.ListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: Can not get the directories
+          schema:
+            $ref: '#/definitions/model.ListException'
+        "404":
+          description: Can not get the directories
+          schema:
+            $ref: '#/definitions/model.ListException'
+      summary: Get the directories of a given path
+swagger: "2.0"

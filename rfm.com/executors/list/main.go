@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"rfm.com/commom"
 	"slices"
 	"strconv"
 	"strings"
@@ -38,7 +39,7 @@ func communicateDiscovery() {
 		}
 
 		selfPort, _ := strconv.Atoi(port)
-		featureRegister := FeatureRegister{Port: selfPort, Prefixes: prefixes}
+		featureRegister := commom.FeatureRegister{Port: selfPort, Prefixes: prefixes}
 		data, _ := json.Marshal(featureRegister)
 		sendData(conn, data)
 		closeConnection(conn)

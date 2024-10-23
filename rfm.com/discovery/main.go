@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"rfm.com/commom"
 	"slices"
 	"strconv"
 	"strings"
@@ -29,7 +30,7 @@ func listenToServices() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
-		var featureRegister FeatureRegister
+		var featureRegister commom.FeatureRegister
 		_ = json.NewDecoder(r.Body).Decode(&featureRegister)
 		statusCode, message := handleServiceDiscovery(r.RemoteAddr, featureRegister)
 
@@ -41,9 +42,9 @@ func listenToServices() {
 
 }
 
-func handleServiceDiscovery(addr string, featureRegister FeatureRegister) (int, string) {
+func handleServiceDiscovery(addr string, featureRegister commom.FeatureRegister) (int, string) {
 
-	service := Service{ip: addr, port: featureRegister.Port, feature: Feature{Prefixes: featureRegister.Prefixes}}
+	service := Service{ip: addr, port: featureRegister.Port, feature: commom.Feature{Prefixes: featureRegister.Prefixes}}
 
 	services = append(services, service)
 	message := fmt.Sprintf("\n\nServiço adicionado. IP/Porta: %s Prefixos: %s", service.getIpAndPort(), strings.Join(service.feature.Prefixes, ","))
@@ -55,7 +56,7 @@ func listenToClient() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("POST /command", func(w http.ResponseWriter, r *http.Request) {
-		var command Command
+		var command commom.Command
 		_ = json.NewDecoder(r.Body).Decode(&command)
 		statusCode, message := handleClientCommand(command.Command)
 
@@ -79,7 +80,7 @@ func handleClientCommand(command string) (int, string) {
 
 	service := services[index]
 	url := fmt.Sprintf("http://%s:%s/", service.ip, service.port)
-	body, err := json.Marshal(Command{Command: command})
+	body, err := json.Marshal(commom.Command{Command: command})
 
 	if err != nil {
 		return 400, "FALHA AO DECODIFICAR COMANDO"

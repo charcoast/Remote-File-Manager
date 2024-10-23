@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"rfm.com/commom"
 	"strings"
 )
 
@@ -29,7 +30,7 @@ func main() {
 		fmt.Print("\nCOMANDO: ")
 
 		text, _ := reader.ReadString('\n')
-		body, _ := json.Marshal(Command{Command: text})
+		body, _ := json.Marshal(commom.Command{Command: text})
 		resp, _ := http.Post("http://"+discoveryHost+":"+DiscoveryPort+"/command", "application/json", bytes.NewBuffer(body))
 
 		buf := new(strings.Builder)

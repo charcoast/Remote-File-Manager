@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"list/api"
-	_ "list/docs"
-	"list/model"
 	"net"
 	"net/http"
+	_ "os"
+	"rfm.com/commom"
+	"rfm.com/executors/list/api"
+	_ "rfm.com/executors/list/docs"
+	_ "rfm.com/executors/list/model"
+	_ "slices"
 	"strconv"
 )
 
@@ -48,7 +51,7 @@ func communicateDiscovery() {
 		}
 
 		selfPort, _ := strconv.Atoi(port)
-		featureRegister := model.FeatureRegister{Port: selfPort, Prefixes: prefixes}
+		featureRegister := commom.FeatureRegister{Port: selfPort, Prefixes: prefixes}
 		data, _ := json.Marshal(featureRegister)
 		sendData(conn, data)
 		closeConnection(conn)

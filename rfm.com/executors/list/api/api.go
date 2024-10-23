@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"list/model"
 	"net/http"
 	"os"
+	"rfm.com/executors/list/model"
 	"strings"
 )
 

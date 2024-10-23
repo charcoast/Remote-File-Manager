@@ -1,4 +1,4 @@
-module list
+module rfm.com/executors/list
 
 go 1.23.2
 
@@ -21,3 +21,7 @@ require (
 	golang.org/x/tools v0.7.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+replace rfm.com/commom => ../../commom
+
+require rfm.com/commom v0.0.0-00010101000000-000000000000

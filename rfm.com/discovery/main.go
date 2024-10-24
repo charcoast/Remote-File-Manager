@@ -8,7 +8,6 @@ import (
 	"rfm.com/commom"
 	"slices"
 	"strconv"
-	"strings"
 )
 
 const DiscoveryPort = 7070
@@ -44,10 +43,10 @@ func listenToServices() {
 
 func handleServiceDiscovery(addr string, featureRegister commom.FeatureRegister) (int, string) {
 
-	service := Service{ip: addr, port: featureRegister.Port, feature: commom.Feature{Prefixes: featureRegister.Prefixes}}
+	service := Service{ip: addr, port: featureRegister.Port, commands: featureRegister.Commands}
 
 	services = append(services, service)
-	message := fmt.Sprintf("\n\nServiço adicionado. IP/Porta: %s Prefixos: %s", service.getIpAndPort(), strings.Join(service.feature.Prefixes, ","))
+	message := fmt.Sprintf("\n\nServiço adicionado. IP/Porta: %s Prefixos: %s", service.getIpAndPort(), service.commands)
 	fmt.Println(message)
 	return 200, message
 }
@@ -71,7 +70,8 @@ func handleClientCommand(command string) (int, string) {
 	fmt.Println("RECEBEU O COMANDO: " + command)
 
 	var index = slices.IndexFunc(services, func(s Service) bool {
-		return slices.Contains(s.feature.Prefixes, command)
+		_, ok := s.commands[command]
+		return ok
 	})
 
 	if index == -1 {

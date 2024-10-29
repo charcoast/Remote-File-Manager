@@ -22,6 +22,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace rfm.com/commom => ../../commom
+replace rfm.com/common => ../../common
 
-require rfm.com/commom v0.0.0-00010101000000-000000000000
+require rfm.com/common v0.0.0-00010101000000-000000000000

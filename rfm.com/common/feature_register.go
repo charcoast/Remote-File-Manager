@@ -1,4 +1,4 @@
-package commom
+package common
 
 type FeatureRegister struct {
 	Port     int               `json:"port"`

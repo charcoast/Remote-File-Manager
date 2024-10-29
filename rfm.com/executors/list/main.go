@@ -7,7 +7,7 @@ import (
 	"net"
 	"net/http"
 	_ "os"
-	"rfm.com/commom"
+	"rfm.com/common"
 	"rfm.com/executors/list/api"
 	_ "rfm.com/executors/list/docs"
 	_ "rfm.com/executors/list/model"
@@ -51,7 +51,7 @@ func communicateDiscovery() {
 		}
 
 		selfPort, _ := strconv.Atoi(port)
-		featureRegister := commom.FeatureRegister{Port: selfPort, Prefixes: prefixes}
+		featureRegister := common.FeatureRegister{Port: selfPort, Prefixes: prefixes}
 		data, _ := json.Marshal(featureRegister)
 		sendData(conn, data)
 		closeConnection(conn)

@@ -1,10 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"net"
 	"net/http"
 	_ "os"
 	"rfm.com/common"
@@ -17,7 +16,7 @@ import (
 
 const DiscoveryPort = 7070
 
-var port string
+var port string = "8888"
 var discoveryIP string
 var prefixes = []string{"list", "li", "ls"}
 
@@ -33,47 +32,27 @@ var prefixes = []string{"list", "li", "ls"}
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host		localhost:8080
+// @host		localhost:8888
 // @BasePath	/
 func main() {
 	go communicateDiscovery()
 	http.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
 	http.HandleFunc("GET /list", api.GetDirectories)
 	http.HandleFunc("POST /list", api.GetDirectoriesByBody)
-	_ = http.ListenAndServe(":8080", nil)
+	_ = http.ListenAndServe(":"+port, nil)
 }
 
 func communicateDiscovery() {
 	for {
-		conn, err := net.Dial("tcp", discoveryIP+":"+strconv.Itoa(DiscoveryPort))
-		if err != nil {
-			continue
-		}
 
 		selfPort, _ := strconv.Atoi(port)
-		featureRegister := common.FeatureRegister{Port: selfPort, Prefixes: prefixes}
+		featureRegister := common.FeatureRegister{Port: selfPort, Commands: map[string]string{"list": "/list"}}
 		data, _ := json.Marshal(featureRegister)
-		sendData(conn, data)
-		closeConnection(conn)
-		return
-	}
-}
 
-func closeConnection(conn net.Conn) {
-	err := conn.Close()
-	if err != nil {
-		fmt.Println(err)
-	}
-}
+		resp, err := http.Post("http://"+discoveryIP+":"+strconv.Itoa(DiscoveryPort)+"/register", "application/json", bytes.NewBuffer(data))
 
-func sendData(conn net.Conn, b []byte) {
-	_, err := fmt.Fprintf(conn, string(b)+"\n")
-	if err != nil {
-		sysOut(err.Error())
-		return
+		if err == nil && resp.StatusCode == 200 {
+			return
+		}
 	}
-}
-
-func sysOut(value interface{}) {
-	fmt.Println(value)
 }

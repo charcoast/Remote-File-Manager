@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/thoas/go-funk"
 	"net/http"
 	"rfm.com/common"
 	_ "rfm.com/discovery/docs"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 const DiscoveryPort = 7070
@@ -63,13 +65,19 @@ func listenToServices() {
 func handleRegisterService(w http.ResponseWriter, r *http.Request) {
 	var featureRegister common.FeatureRegister
 	_ = json.NewDecoder(r.Body).Decode(&featureRegister)
-	statusCode, message := handleServiceDiscovery(r.RemoteAddr, featureRegister)
+	statusCode, message := handleServiceDiscovery(strings.Split(r.RemoteAddr, ":")[0], featureRegister)
 
 	w.WriteHeader(statusCode)
 	w.Write([]byte(message))
 }
 
 func handleServiceDiscovery(addr string, featureRegister common.FeatureRegister) (int, string) {
+
+	//remove initial '/' from addr
+	featureRegister.Commands = funk.Map(featureRegister.Commands, func(k string, v string) (string, string) {
+
+		return k, strings.TrimPrefix(v, "/")
+	}).(map[string]string)
 
 	service := Service{ip: addr, port: featureRegister.Port, commands: featureRegister.Commands}
 
@@ -95,10 +103,14 @@ func listenToClient() {
 }
 
 func handleClientCommand(command string) (int, string) {
+	command = strings.TrimSpace(command)
+
 	fmt.Println("RECEBEU O COMANDO: " + command)
 
+	var endpoint = ""
 	var index = slices.IndexFunc(services, func(s Service) bool {
-		_, ok := s.commands[command]
+		var ok = false
+		endpoint, ok = s.commands[command]
 		return ok
 	})
 
@@ -107,7 +119,7 @@ func handleClientCommand(command string) (int, string) {
 	}
 
 	service := services[index]
-	url := fmt.Sprintf("http://%s:%s/", service.ip, service.port)
+	url := fmt.Sprintf("http://%s:%d/%s", service.ip, service.port, endpoint)
 	body, err := json.Marshal(common.Command{Command: command})
 
 	if err != nil {

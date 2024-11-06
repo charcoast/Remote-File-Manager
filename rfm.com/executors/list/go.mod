@@ -24,4 +24,7 @@ require (
 
 replace rfm.com/common => ../../common
 
-require rfm.com/common v0.0.0-00010101000000-000000000000
+require (
+	github.com/rs/cors v1.11.1
+	rfm.com/common v0.0.0-00010101000000-000000000000
+)

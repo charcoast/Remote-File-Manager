@@ -57,7 +57,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Get the directories b the path specified",
+                "description": "Get the directories by the path specified",
                 "consumes": [
                     "application/json"
                 ],

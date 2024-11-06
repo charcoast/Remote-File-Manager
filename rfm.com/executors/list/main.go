@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	_ "os"
@@ -14,11 +16,7 @@ import (
 	"strconv"
 )
 
-const DiscoveryPort = 7070
-
-var port string = "8888"
-var discoveryIP string
-var prefixes = []string{"list", "li", "ls"}
+var SelfPort = common.GetRandomPort()
 
 //	@title			Remote-File-Manager - List Executor
 //	@version		1.0
@@ -32,27 +30,32 @@ var prefixes = []string{"list", "li", "ls"}
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host		localhost:8888
+// @host		localhost:8080
 // @BasePath	/
 func main() {
+	sysOut(SelfPort)
 	go communicateDiscovery()
 	http.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
 	http.HandleFunc("GET /list", api.GetDirectories)
 	http.HandleFunc("POST /list", api.GetDirectoriesByBody)
-	_ = http.ListenAndServe(":"+port, nil)
+	cors.AllowAll()
+	_ = http.ListenAndServe(":"+strconv.Itoa(SelfPort), nil)
 }
 
 func communicateDiscovery() {
 	for {
-
-		selfPort, _ := strconv.Atoi(port)
-		featureRegister := common.FeatureRegister{Port: selfPort, Commands: map[string]string{"list": "/list"}}
-		data, _ := json.Marshal(featureRegister)
-
-		resp, err := http.Post("http://"+discoveryIP+":"+strconv.Itoa(DiscoveryPort)+"/register", "application/json", bytes.NewBuffer(data))
-
-		if err == nil && resp.StatusCode == 200 {
+		url := fmt.Sprintf("http://%s:%d/register", common.DiscoveryDomain, common.DiscoveryPort)
+		commands := map[string]string{"ls": "/list"}
+		featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
+		jsonValue, _ := json.Marshal(featureRegister)
+		request := bytes.NewBuffer(jsonValue)
+		response, _ := http.Post(url, "application/json", request)
+		if response != nil && response.StatusCode == 200 {
 			return
 		}
 	}
+}
+
+func sysOut(value interface{}) {
+	fmt.Println(value)
 }

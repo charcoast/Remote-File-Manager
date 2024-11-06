@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-
 	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"rfm.com/commom"
+	"net/http"
+	_ "os"
+	"rfm.com/common"
 	"rfm.com/executors/list/api"
 	_ "rfm.com/executors/list/docs"
 	_ "rfm.com/executors/list/model"
+	_ "slices"
+	"strconv"
 )
 
-var SelfPort = commom.GetRandomPort()
+var SelfPort = common.GetRandomPort()
 
 //	@title			Remote-File-Manager - List Executor
 //	@version		1.0
@@ -43,9 +44,9 @@ func main() {
 
 func communicateDiscovery() {
 	for {
-		url := fmt.Sprintf("http://%s:%d/register", commom.DiscoveryDomain, commom.DiscoveryPort)
+		url := fmt.Sprintf("http://%s:%d/register", common.DiscoveryDomain, common.DiscoveryPort)
 		commands := map[string]string{"ls": "/list"}
-		featureRegister := commom.FeatureRegister{Port: SelfPort, Commands: commands}
+		featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
 		jsonValue, _ := json.Marshal(featureRegister)
 		request := bytes.NewBuffer(jsonValue)
 		response, _ := http.Post(url, "application/json", request)

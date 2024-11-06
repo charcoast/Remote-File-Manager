@@ -22,9 +22,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace rfm.com/commom => ../../commom
+replace rfm.com/common => ../../common
 
 require (
 	github.com/rs/cors v1.11.1
-	rfm.com/commom v0.0.0-00010101000000-000000000000
+	rfm.com/common v0.0.0-00010101000000-000000000000
 )

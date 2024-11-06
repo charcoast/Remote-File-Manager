@@ -56,7 +56,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Get the directories b the path specified
+      description: Get the directories by the path specified
       operationId: get-directories
       parameters:
       - description: The informations about the directories

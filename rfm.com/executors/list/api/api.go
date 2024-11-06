@@ -24,7 +24,7 @@ func GetDirectories(w http.ResponseWriter, r *http.Request) {
 
 // GetDirectoriesByBody
 // @Summary Get the directories of a given path
-// @Description Get the directories b the path specified
+// @Description Get the directories by the path specified
 // @ID get-directories
 // @Accept json
 // @Produce json

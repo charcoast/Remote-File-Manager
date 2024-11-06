@@ -1,25 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"net"
 	"net/http"
-	_ "os"
+	"strconv"
+
+	"github.com/rs/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"rfm.com/commom"
 	"rfm.com/executors/list/api"
 	_ "rfm.com/executors/list/docs"
 	_ "rfm.com/executors/list/model"
-	_ "slices"
-	"strconv"
 )
 
-const DiscoveryPort = 7070
-
-var port string
-var discoveryIP string
-var prefixes = []string{"list", "li", "ls"}
+var SelfPort = commom.GetRandomPort()
 
 //	@title			Remote-File-Manager - List Executor
 //	@version		1.0
@@ -36,41 +32,26 @@ var prefixes = []string{"list", "li", "ls"}
 // @host		localhost:8080
 // @BasePath	/
 func main() {
+	sysOut(SelfPort)
 	go communicateDiscovery()
 	http.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
 	http.HandleFunc("GET /list", api.GetDirectories)
 	http.HandleFunc("POST /list", api.GetDirectoriesByBody)
-	_ = http.ListenAndServe(":8080", nil)
+	cors.AllowAll()
+	_ = http.ListenAndServe(":"+strconv.Itoa(SelfPort), nil)
 }
 
 func communicateDiscovery() {
 	for {
-		conn, err := net.Dial("tcp", discoveryIP+":"+strconv.Itoa(DiscoveryPort))
-		if err != nil {
-			continue
+		url := fmt.Sprintf("http://%s:%d/register", commom.DiscoveryDomain, commom.DiscoveryPort)
+		commands := map[string]string{"ls": "/list"}
+		featureRegister := commom.FeatureRegister{Port: SelfPort, Commands: commands}
+		jsonValue, _ := json.Marshal(featureRegister)
+		request := bytes.NewBuffer(jsonValue)
+		response, _ := http.Post(url, "application/json", request)
+		if response != nil && response.StatusCode == 200 {
+			return
 		}
-
-		selfPort, _ := strconv.Atoi(port)
-		featureRegister := commom.FeatureRegister{Port: selfPort, Prefixes: prefixes}
-		data, _ := json.Marshal(featureRegister)
-		sendData(conn, data)
-		closeConnection(conn)
-		return
-	}
-}
-
-func closeConnection(conn net.Conn) {
-	err := conn.Close()
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-func sendData(conn net.Conn, b []byte) {
-	_, err := fmt.Fprintf(conn, string(b)+"\n")
-	if err != nil {
-		sysOut(err.Error())
-		return
 	}
 }
 

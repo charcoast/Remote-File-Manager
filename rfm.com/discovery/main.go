@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/rs/cors"
 	"github.com/thoas/go-funk"
+	"io"
+	"net"
 	"net/http"
 	"rfm.com/common"
 	"slices"
@@ -23,7 +26,7 @@ func main() {
 
 	go listenToServices()
 	listenToClient()
-
+	cors.AllowAll()
 }
 
 func listenToServices() {
@@ -38,7 +41,8 @@ func listenToServices() {
 func handleRegisterService(w http.ResponseWriter, r *http.Request) {
 	var featureRegister common.FeatureRegister
 	_ = json.NewDecoder(r.Body).Decode(&featureRegister)
-	statusCode, message := handleServiceDiscovery(strings.Split(r.RemoteAddr, ":")[0], featureRegister)
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	statusCode, message := handleServiceDiscovery(host, featureRegister)
 
 	w.WriteHeader(statusCode)
 	w.Write([]byte(message))
@@ -65,8 +69,9 @@ func listenToClient() {
 	router.HandleFunc("POST /command", func(w http.ResponseWriter, r *http.Request) {
 		var command common.Command
 		_ = json.NewDecoder(r.Body).Decode(&command)
-		statusCode, message := handleClientCommand(command.Command)
+		statusCode, message := handleClientCommand(command)
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 		w.Write([]byte(message))
 	})
@@ -74,15 +79,15 @@ func listenToClient() {
 	http.ListenAndServe(":"+strconv.Itoa(ClientPort), router)
 }
 
-func handleClientCommand(command string) (int, string) {
-	command = strings.TrimSpace(command)
+func handleClientCommand(command common.Command) (int, string) {
+	commandStr := strings.TrimSpace(command.Command)
 
-	fmt.Println("RECEBEU O COMANDO: " + command)
+	fmt.Println("RECEBEU O COMANDO: " + commandStr)
 
 	var endpoint = ""
 	var index = slices.IndexFunc(services, func(s Service) bool {
 		var ok = false
-		endpoint, ok = s.commands[command]
+		endpoint, ok = s.commands[commandStr]
 		return ok
 	})
 
@@ -92,20 +97,22 @@ func handleClientCommand(command string) (int, string) {
 
 	service := services[index]
 	url := fmt.Sprintf("http://%s:%d/%s", service.ip, service.port, endpoint)
-	body, err := json.Marshal(common.Command{Command: command})
+
+	body, err := json.Marshal(command.Arguments)
 
 	if err != nil {
 		return 400, "FALHA AO DECODIFICAR COMANDO"
 	}
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 
+	defer resp.Body.Close()
+
 	if err != nil {
 		return 500, "NÃO FOI POSSÍVEL EXECUTAR O COMANDO"
 	}
 
-	var result string
-	_ = json.NewDecoder(resp.Body).Decode(&result)
-	fmt.Print("RESPONDEU: " + result)
+	result, _ := io.ReadAll(resp.Body)
+	fmt.Printf("RESPONDEU: %s", result)
 
-	return 200, result
+	return 200, string(result)
 }

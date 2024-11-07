@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -43,17 +41,9 @@ func main() {
 }
 
 func communicateDiscovery() {
-	for {
-		url := fmt.Sprintf("http://%s:%d/register", common.DiscoveryDomain, common.DiscoveryPort)
-		commands := map[string]string{"ls": "/list"}
-		featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
-		jsonValue, _ := json.Marshal(featureRegister)
-		request := bytes.NewBuffer(jsonValue)
-		response, _ := http.Post(url, "application/json", request)
-		if response != nil && response.StatusCode == 200 {
-			return
-		}
-	}
+	commands := map[string]string{"ls": "/list"}
+	featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
+	common.CommunicateDiscovery(featureRegister)
 }
 
 func sysOut(value interface{}) {

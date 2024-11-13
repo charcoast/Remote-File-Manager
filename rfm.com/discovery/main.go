@@ -19,23 +19,29 @@ const DiscoveryPort = 7070
 const ClientPort = 9090
 
 var services []Service
+var c *cors.Cors
 
 func main() {
 
 	fmt.Println("****RUNNING****")
+	c = cors.New(cors.Options{AllowedOrigins: []string{"http://localhost:5173", "http://localhost:5174"},
+		AllowCredentials: true,
+		Debug:            true})
 
 	go listenToServices()
 	listenToClient()
-	cors.AllowAll()
+}
+
+func getCors() *cors.Cors {
+	return cors.New(cors.Options{AllowedOrigins: []string{"localhost:5173"},
+		AllowCredentials: true,
+		Debug:            true})
 }
 
 func listenToServices() {
-
 	router := http.NewServeMux()
-
 	router.HandleFunc("POST /register", handleRegisterService)
-	http.ListenAndServe(":"+strconv.Itoa(DiscoveryPort), router)
-
+	http.ListenAndServe(":"+strconv.Itoa(DiscoveryPort), c.Handler(router))
 }
 
 func handleRegisterService(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +82,7 @@ func listenToClient() {
 		w.Write([]byte(message))
 	})
 
-	http.ListenAndServe(":"+strconv.Itoa(ClientPort), router)
+	http.ListenAndServe(":"+strconv.Itoa(ClientPort), c.Handler(router))
 }
 
 func handleClientCommand(command common.Command) (int, string) {

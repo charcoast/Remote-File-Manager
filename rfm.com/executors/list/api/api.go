@@ -47,13 +47,13 @@ func getDirectories(w http.ResponseWriter, path string) {
 	if err != nil {
 		_ = returnJsonObject(&w, throwNewListException("GetDirectoriesException", "Ocorreu um erro ao consultar os diretórios"))
 	}
-	var directories = make([]string, 0)
+	var directories = make([]model.Entry, 0)
 	for _, dir := range dirs {
 		dirName := strings.TrimSpace(dir.Name())
 		if dirName == "" || len(dirName) == 0 {
 			continue
 		}
-		directories = append(directories, dirName)
+		directories = append(directories, model.Entry{Name: dirName, IsDir: dir.IsDir()})
 	}
 	err = returnJsonObject(&w, directories)
 	if err != nil {

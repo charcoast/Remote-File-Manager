@@ -39,10 +39,20 @@ func GetDirectoriesByBody(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = returnJsonObject(&w, throwNewListException("GetRequestBodyException", "Ocorreu um erro ao recuperar o body a requisição"))
 	}
+
+	if strings.Index(request.Path, "./") > -1 || strings.Index(request.Path, "../") > -1 {
+		_ = returnJsonObject(&w, throwNewListException("PathException", "O caminho não pode ser relativo"))
+	}
+
+	if strings.HasPrefix(request.Path, "/") {
+		_ = returnJsonObject(&w, throwNewListException("PathException", "O caminho deve começar com /"))
+	}
+
 	getDirectories(w, request.Path)
 }
 
 func getDirectories(w http.ResponseWriter, path string) {
+	path = "/app" + path
 	dirs, err := os.ReadDir(path)
 	if err != nil {
 		_ = returnJsonObject(&w, throwNewListException("GetDirectoriesException", "Ocorreu um erro ao consultar os diretórios"))

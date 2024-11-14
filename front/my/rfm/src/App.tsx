@@ -12,30 +12,34 @@ function App() {
     subs: undefined,
   });
 
-  const load = useCallback((path: string) => {
-    path = path.replace("//", "/");
+  const load = useCallback(
+    (path: string) => {
+      path = path.replace("//", "/");
 
-    const splittedPath = path.split("/");
-    let elementPath = "subs";
-    let obj = cloneDeep(element);
-    for (let p of splittedPath) {
-      if (p === "") continue;
+      const splittedPath = path.split("/");
 
-      elementPath += "[" + p + "]";
-    }
+      console.log(element);
+      let obj = cloneDeep(element);
+      let holder: Element | undefined = obj;
+      for (let p of splittedPath) {
+        if (p === "") continue;
+        if (holder && holder.isDir) {
+          holder = holder.subs?.find((x) => x.name === p);
+        }
+      }
 
-    CommandRepository.post<Element[]>({
-      command: "ls",
-      arguments: { path },
-    }).then((e) => {
-      console.log(splittedPath, elementPath);
-      const newValue = cloneDeep(element);
-      _.set(newValue, elementPath, e);
-
-      console.log(newValue);
-      setElement(newValue);
-    });
-  }, []);
+      CommandRepository.post<Element[]>({
+        command: "ls",
+        arguments: { path },
+      }).then((e) => {
+        if (holder?.isDir) {
+          holder.subs = e;
+        }
+        setElement(obj);
+      });
+    },
+    [element],
+  );
 
   useEffect(() => {
     load("/");
@@ -48,7 +52,7 @@ function App() {
         const localPath = path + x.name;
         return (
           <TreeItem
-            itemId={x.name}
+            itemId={path + x.name}
             label={x.name}
             onClick={() => load(localPath)}
           >
@@ -62,7 +66,7 @@ function App() {
         );
       });
     },
-    [],
+    [element],
   );
 
   return (

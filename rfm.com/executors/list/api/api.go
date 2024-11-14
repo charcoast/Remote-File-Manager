@@ -44,7 +44,7 @@ func GetDirectoriesByBody(w http.ResponseWriter, r *http.Request) {
 		_ = returnJsonObject(&w, throwNewListException("PathException", "O caminho não pode ser relativo"))
 	}
 
-	if strings.HasPrefix(request.Path, "/") {
+	if !strings.HasPrefix(request.Path, "/") {
 		_ = returnJsonObject(&w, throwNewListException("PathException", "O caminho deve começar com /"))
 	}
 

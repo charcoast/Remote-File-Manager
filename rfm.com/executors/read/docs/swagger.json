@@ -1,0 +1,137 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is one of the executors that works in the Remote-File-Manager application.",
+        "title": "Remote-File-Manager - Create Executor",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/create/directory": {
+            "post": {
+                "description": "Create a file int a given path",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a file",
+                "operationId": "create-directory",
+                "parameters": [
+                    {
+                        "description": "The information about the file to be created",
+                        "name": "CreateRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Can not create the directory",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateException"
+                        }
+                    },
+                    "404": {
+                        "description": "Can not create the directory",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateException"
+                        }
+                    }
+                }
+            }
+        },
+        "/create/file": {
+            "post": {
+                "description": "Create a file int a given path",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a file",
+                "operationId": "create-file",
+                "parameters": [
+                    {
+                        "description": "The information about the file to be created",
+                        "name": "CreateRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Can not create the file",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateException"
+                        }
+                    },
+                    "404": {
+                        "description": "Can not create the file",
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateException"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.CreateException": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "type": "string"
+                },
+                "exception": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

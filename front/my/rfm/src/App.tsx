@@ -18,7 +18,6 @@ function App() {
 
       const splittedPath = path.split("/");
 
-      console.log(element);
       let obj = cloneDeep(element);
       let holder: Element | undefined = obj;
       for (let p of splittedPath) {

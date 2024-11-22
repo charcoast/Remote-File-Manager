@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"rfm.com/common"
 	"rfm.com/executors/create/model"
 )
 
@@ -16,22 +17,24 @@ import (
 // @ID create-file
 // @Accept json
 // @Produce json
-// @Param CreateRequest body model.CreateRequest true "The information about the file to be created"
+// @Param CreateFileRequest body model.CreateFileRequest true "The information about the file to be created"
 // @Success 200 {string} string "ok"
 // @Failure 400 {object} model.CreateException "Can not create the file"
 // @Failure 404 {object} model.CreateException "Can not create the file"
 // @Router /create/file [post]
 func CreateFile(w http.ResponseWriter, r *http.Request) {
-	var request model.CreateRequest
+	var request model.CreateFileRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		_ = returnJsonObject(&w, throwNewListException("GetRequestBodyException", "Ocorreu um erro ao recuperar o body a requisição"))
+		_ = returnErrorJsonObject(w, throwNewListException("GetRequestBodyException", "Ocorreu um erro ao recuperar o body a requisição"))
 	}
-	filePath := filepath.Join(request.Path, request.Name)
-	err = createDirectory(request.Path)
+	path := filepath.Join(common.BasePath, request.Path)
+	err = createDirectory(path)
 	if err != nil {
-		_ = returnJsonObject(&w, "Ocorreu um erro ao crear crear o path")
+		_ = returnErrorJsonObject(w, "Ocorreu um erro ao criar o path")
+		return
 	}
+	filePath := filepath.Join(path, request.Name)
 	file, err := os.Create(filePath)
 	if err != nil {
 		fmt.Println("Erro ao criar o arquivo:", err)
@@ -61,20 +64,23 @@ func CreateFile(w http.ResponseWriter, r *http.Request) {
 // @ID create-directory
 // @Accept json
 // @Produce json
-// @Param CreateRequest body model.CreateRequest true "The information about the file to be created"
+// @Param CreateFileRequest body model.CreateFileRequest true "The information about the file to be created"
 // @Success 200 {string} string "ok"
 // @Failure 400 {object} model.CreateException "Can not create the directory"
 // @Failure 404 {object} model.CreateException "Can not create the directory"
 // @Router /create/directory [post]
 func CreateDirectory(w http.ResponseWriter, r *http.Request) {
-	var request model.CreateRequest
+	var request model.CreateDirRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		_ = returnJsonObject(&w, throwNewListException("GetRequestBodyException", "Ocorreu um erro ao recuperar o body a requisição"))
+		_ = returnErrorJsonObject(w, throwNewListException("GetRequestBodyException", "Ocorreu um erro ao recuperar o body a requisição"))
 	}
-	err = createDirectory(filepath.Join(request.Path, request.Name))
+
+	request.Path = filepath.Join(common.BasePath, request.Path)
+
+	err = createDirectory(request.Path)
 	if err != nil {
-		_ = returnJsonObject(&w, "Ocorreu um erro ao crear crear o path")
+		_ = returnErrorJsonObject(w, "Ocorreu um erro ao criar o path")
 	}
 }
 
@@ -82,8 +88,9 @@ func createDirectory(path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }
 
-func returnJsonObject(w *http.ResponseWriter, data any) error {
-	return json.NewEncoder(*w).Encode(data)
+func returnErrorJsonObject(w http.ResponseWriter, data any) error {
+	w.WriteHeader(http.StatusBadRequest)
+	return json.NewEncoder(w).Encode(data)
 }
 
 func throwNewListException(exception, message string) model.CreateException {

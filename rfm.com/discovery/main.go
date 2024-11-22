@@ -75,17 +75,23 @@ func listenToClient() {
 	router.HandleFunc("POST /command", func(w http.ResponseWriter, r *http.Request) {
 		var command common.Command
 		_ = json.NewDecoder(r.Body).Decode(&command)
-		statusCode, message := handleClientCommand(command)
+		statusCode, header, message := handleClientCommand(command)
 
-		w.Header().Set("Content-Type", "application/json")
+		if header != nil {
+			w.Header().Set("Content-Type", header.Get("Content-Type"))
+			w.Header().Set("Content-Disposition", header.Get("Content-Disposition"))
+			w.Header().Set("Content-Length", header.Get("Content-Length"))
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+		}
 		w.WriteHeader(statusCode)
-		w.Write([]byte(message))
+		w.Write(message)
 	})
 
 	http.ListenAndServe(":"+strconv.Itoa(ClientPort), c.Handler(router))
 }
 
-func handleClientCommand(command common.Command) (int, string) {
+func handleClientCommand(command common.Command) (int, http.Header, []byte) {
 	commandStr := strings.TrimSpace(command.Command)
 
 	fmt.Println("RECEBEU O COMANDO: " + commandStr)
@@ -98,7 +104,7 @@ func handleClientCommand(command common.Command) (int, string) {
 	})
 
 	if index == -1 {
-		return 500, "NÃO HÁ SERVIÇO CAPAZ DE RESPONDER SUA SOLICITAÇÃO"
+		return 500, nil, []byte("NÃO HÁ SERVIÇO CAPAZ DE RESPONDER SUA SOLICITAÇÃO")
 	}
 
 	service := services[index]
@@ -107,18 +113,18 @@ func handleClientCommand(command common.Command) (int, string) {
 	body, err := json.Marshal(command.Arguments)
 
 	if err != nil {
-		return 400, "FALHA AO DECODIFICAR COMANDO"
+		return 400, nil, []byte("FALHA AO DECODIFICAR COMANDO")
 	}
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 
 	defer resp.Body.Close()
 
 	if err != nil {
-		return 500, "NÃO FOI POSSÍVEL EXECUTAR O COMANDO"
+		return 500, nil, []byte("NÃO FOI POSSÍVEL EXECUTAR O COMANDO")
 	}
 
 	result, _ := io.ReadAll(resp.Body)
 	fmt.Printf("RESPONDEU: %s", result)
 
-	return 200, string(result)
+	return 200, resp.Header, result
 }

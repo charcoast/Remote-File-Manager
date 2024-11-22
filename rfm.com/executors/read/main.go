@@ -40,7 +40,7 @@ func main() {
 }
 
 func communicateDiscovery() {
-	commands := map[string]string{"ls": "/list"}
+	commands := map[string]string{"read": "/read"}
 	featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
 	common.CommunicateDiscovery(featureRegister)
 }

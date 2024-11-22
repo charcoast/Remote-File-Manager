@@ -1,11 +1,11 @@
 package api
 
 import (
-	"bufio"
 	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
+	"rfm.com/common"
 	"rfm.com/executors/read/model"
 )
 
@@ -26,15 +26,19 @@ func ReadFile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = returnJsonObject(&w, throwNewListException("GetRequestBodyException", "Ocorreu um erro ao recuperar o body a requisição"))
 	}
-	filePath := filepath.Join(request.Path, request.Name)
+	filePath := filepath.Join(common.BasePath, request.Path, request.Name)
+	contentType, err := GetFileContentType(filePath)
 	file, err := os.ReadFile(filePath)
 
 	if err != nil {
 		_ = returnJsonObject(&w, "Ocorreu um erro ao ler o path")
 	}
 
-	bufio.NewWriter(w).Write(file)
 	w.Header().Set("Content-Disposition", "inline; filename="+request.Name)
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(200)
+	w.Write(file)
+	//bufio.NewWriter(w).Write(file)
 }
 
 // CreateDirectory
@@ -56,7 +60,7 @@ func CreateDirectory(w http.ResponseWriter, r *http.Request) {
 	}
 	err = createDirectory(filepath.Join(request.Path, request.Name))
 	if err != nil {
-		_ = returnJsonObject(&w, "Ocorreu um erro ao crear crear o path")
+		_ = returnJsonObject(&w, "Ocorreu um erro ao criar o path")
 	}
 }
 
@@ -70,4 +74,26 @@ func returnJsonObject(w *http.ResponseWriter, data any) error {
 
 func throwNewListException(exception, message string) model.ReadException {
 	return model.ReadException{Exception: exception, Details: message}
+}
+
+func GetFileContentType(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	// to sniff the content type only the first
+	// 512 bytes are used.
+
+	buf := make([]byte, 512)
+
+	_, err = file.Read(buf)
+
+	if err != nil {
+		return "", err
+	}
+
+	// the function that actually does the trick
+	contentType := http.DetectContentType(buf)
+
+	return contentType, nil
 }

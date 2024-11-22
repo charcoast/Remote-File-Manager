@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"rfm.com/common"
 	"rfm.com/executors/list/model"
 	"strings"
 )
@@ -52,7 +53,7 @@ func GetDirectoriesByBody(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDirectories(w http.ResponseWriter, path string) {
-	path = "/app" + path
+	path = common.BasePath + path
 	dirs, err := os.ReadDir(path)
 	if err != nil {
 		_ = returnJsonObject(&w, throwNewListException("GetDirectoriesException", "Ocorreu um erro ao consultar os diretórios"))

@@ -12,6 +12,9 @@ import {
   NoteAdd,
 } from "@mui/icons-material";
 import { CreateDirRequest, CreateFileRequest } from "./model/Command.ts";
+import { AxiosResponse } from "axios";
+
+const pathRegex = RegExp("/{2,}", "g");
 
 function App() {
   const [element, setElement] = useState<Element>({
@@ -28,13 +31,29 @@ function App() {
     | undefined
   >();
 
+  const [display, setDisplay] = useState<string | undefined>();
+
   useEffect(() => {
     console.log(adding);
   }, [adding]);
 
+  const readFile = useCallback(async (path: string, filename: string) => {
+    path = path.replace(pathRegex, "/");
+    const response: AxiosResponse<Blob> = await CommandRepository.post(
+      {
+        command: "read",
+        arguments: { path, name: filename },
+      },
+      { responseType: "blob" },
+    );
+
+    const href = URL.createObjectURL(response.data);
+    setDisplay(href);
+  }, []);
+
   const load = useCallback(
     (path: string, force?: boolean) => {
-      path = path.replace("//", "/");
+      path = path.replace(pathRegex, "/");
 
       const splittedPath = path.split("/");
 
@@ -51,7 +70,7 @@ function App() {
         return;
       }
 
-      CommandRepository.post<Element[]>({
+      CommandRepository.postAndGetData<Element[]>({
         command: "ls",
         arguments: { path },
       }).then((e) => {
@@ -66,7 +85,7 @@ function App() {
 
   const createFile = useCallback(
     async (path: string, filename: string, content: string): Promise<void> => {
-      await CommandRepository.post({
+      await CommandRepository.postAndGetData({
         command: "mkfile",
         arguments: {
           path,
@@ -79,8 +98,8 @@ function App() {
   );
 
   const createDirectory = useCallback(async (path: string): Promise<void> => {
-    path = path.replace(RegExp("/{2,}", "g"), "/");
-    await CommandRepository.post({
+    path = path.replace(pathRegex, "/");
+    await CommandRepository.postAndGetData({
       command: "mkdir",
       arguments: {
         path,
@@ -153,7 +172,13 @@ function App() {
                 </Box>
               </Box>
             }
-            onClick={() => load(localPath)}
+            onClick={() => {
+              if (x.isDir) {
+                load(localPath);
+              } else {
+                readFile(path, x.name);
+              }
+            }}
           >
             {adding && adding.path === localPath && (
               <TreeItem
@@ -252,11 +277,22 @@ function App() {
   );
 
   return (
-    <Paper sx={{ width: "30vw", height: "100vh" }}>
-      <SimpleTreeView>
-        {getTree("/", element.isDir ? (element.subs ?? []) : [])}
-      </SimpleTreeView>
-    </Paper>
+    <Box display="flex">
+      <Paper sx={{ width: "30vw", height: "100vh" }}>
+        <SimpleTreeView>
+          {getTree("/", element.isDir ? (element.subs ?? []) : [])}
+        </SimpleTreeView>
+      </Paper>
+      <Paper sx={{ width: "70vw", height: "100vh" }}>
+        {display && (
+          <iframe
+            src={display}
+            seamless={true}
+            style={{ height: "90vh", width: "70vw" }}
+          ></iframe>
+        )}
+      </Paper>
+    </Box>
   );
 }
 

@@ -41,7 +41,7 @@ func main() {
 }
 
 func communicateDiscovery() {
-	commands := map[string]string{"ls": "/list"}
+	commands := map[string]string{"mkfile": "/create/file", "mkdir": "/create/directory"}
 	featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
 	common.CommunicateDiscovery(featureRegister)
 }

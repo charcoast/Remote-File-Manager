@@ -1,0 +1,1 @@
+killall rmf-* 2>/dev/null

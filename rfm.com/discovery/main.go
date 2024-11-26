@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"github.com/rs/cors"
 	"github.com/thoas/go-funk"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"io"
 	"net"
 	"net/http"
 	"rfm.com/common"
+	"rfm.com/discovery/model"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,8 +24,11 @@ const ClientPort = 9090
 
 var services []Service
 var c *cors.Cors
+var db *gorm.DB = nil
 
 func main() {
+
+	initDB()
 
 	fmt.Println("****RUNNING****")
 	c = cors.New(cors.Options{AllowedOrigins: []string{"http://localhost:5173", "http://localhost:5174"},
@@ -32,16 +39,38 @@ func main() {
 	listenToClient()
 }
 
-func getCors() *cors.Cors {
-	return cors.New(cors.Options{AllowedOrigins: []string{"localhost:5173"},
-		AllowCredentials: true,
-		Debug:            true})
+func initDB() {
+	var err error
+
+	db, err = gorm.Open(sqlite.Open("discovery.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	err = db.AutoMigrate(&model.User{})
+	if err != nil {
+		panic(err)
+	}
+
+	var user = model.User{}
+	db.First(&user, "username = ?", "admin")
+
+	if user.Username != "" {
+		return
+	}
+
+	hashPass, err := hashPassword("admin")
+	db.Create(&model.User{Username: "admin", Password: hashPass})
 }
 
 func listenToServices() {
 	router := http.NewServeMux()
+
 	router.HandleFunc("POST /register", handleRegisterService)
-	http.ListenAndServe(":"+strconv.Itoa(DiscoveryPort), c.Handler(router))
+	err := http.ListenAndServe(":"+strconv.Itoa(DiscoveryPort), c.Handler(router))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func handleRegisterService(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +98,41 @@ func handleServiceDiscovery(addr string, featureRegister common.FeatureRegister)
 	return 200, message
 }
 
+func handleAuthentication(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, plainPass, _ := r.BasicAuth()
+
+		var user model.User
+		db.First(&user, "username = ?", username)
+
+		if user.Username == "" {
+			w.WriteHeader(401)
+			return
+		}
+
+		valid := VerifyPassword(plainPass, user.Password)
+
+		if !valid {
+			w.WriteHeader(401)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+
+	})
+
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func VerifyPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
 func listenToClient() {
 	router := http.NewServeMux()
 
@@ -88,7 +152,7 @@ func listenToClient() {
 		w.Write(message)
 	})
 
-	http.ListenAndServe(":"+strconv.Itoa(ClientPort), c.Handler(router))
+	http.ListenAndServe(":"+strconv.Itoa(ClientPort), c.Handler(handleAuthentication(router)))
 }
 
 func handleClientCommand(command common.Command) (int, http.Header, []byte) {

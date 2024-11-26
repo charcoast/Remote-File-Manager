@@ -56,7 +56,7 @@ func getDirectories(w http.ResponseWriter, path string) {
 	path = common.BasePath + path
 	dirs, err := os.ReadDir(path)
 	if err != nil {
-		print(err)
+		print(err.Error())
 		_ = returnJsonObject(&w, throwNewListException("GetDirectoriesException", "Ocorreu um erro ao consultar os diretórios"))
 	}
 	var directories = make([]model.Entry, 0)

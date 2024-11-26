@@ -106,6 +106,7 @@ func handleAuthentication(h http.Handler) http.Handler {
 		db.First(&user, "username = ?", username)
 
 		if user.Username == "" {
+			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
 			w.WriteHeader(401)
 			return
 		}
@@ -113,6 +114,7 @@ func handleAuthentication(h http.Handler) http.Handler {
 		valid := VerifyPassword(plainPass, user.Password)
 
 		if !valid {
+			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
 			w.WriteHeader(401)
 			return
 		}

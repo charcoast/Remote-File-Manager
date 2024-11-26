@@ -31,7 +31,7 @@ func main() {
 	initDB()
 
 	fmt.Println("****RUNNING****")
-	c = cors.New(cors.Options{AllowedOrigins: []string{"http://localhost:5173", "http://localhost:5174"},
+	c = cors.New(cors.Options{AllowedOrigins: []string{"http://http://167.234.232.150"},
 		AllowCredentials: true,
 		Debug:            true})
 

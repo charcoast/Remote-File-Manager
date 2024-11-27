@@ -59,7 +59,7 @@ func initDB() {
 		return
 	}
 
-	hashPass, err := hashPassword("admin")
+	hashPass, err := hashPassword("2M5w93ASyNFh=O>liMYU7")
 	db.Create(&model.User{Username: "admin", Password: hashPass})
 }
 

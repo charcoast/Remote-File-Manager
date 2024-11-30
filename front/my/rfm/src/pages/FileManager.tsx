@@ -1,17 +1,11 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { Element } from "../model/Element.ts";
 import { SimpleTreeView, TreeItem } from "@mui/x-tree-view";
-import { CommandRepository } from "../repository/CommandRepository.ts";
-import _, { cloneDeep } from "lodash";
 import { Box, Grid, IconButton, Paper, styled, TextField } from "@mui/material";
 import { Check, Close } from "@mui/icons-material";
-import { CreateDirRequest, CreateFileRequest } from "../model/Command.ts";
-import { AxiosResponse } from "axios";
-import { fileStructure } from "../mock/mock.tsx";
 import backgroundImage from "../assets/background.png";
 import { FileTreeItem } from "../components/FileTreeItem.tsx";
-
-const pathRegex = RegExp("/{2,}", "g");
+import ApiService from "../services/ApiService.ts";
 
 function FileManager() {
   const [element, setElement] = useState<Element>({
@@ -19,6 +13,8 @@ function FileManager() {
     isDir: true,
     subs: undefined,
   });
+
+  const [display, setDisplay] = useState<string | undefined>();
 
   const [adding, setAdding] = useState<
     | ({ name: string; path: string } & (
@@ -44,86 +40,37 @@ function FileManager() {
     setAdding(item);
   };
 
-  const [display, setDisplay] = useState<string | undefined>();
-
-  useEffect(() => {
-    console.log(adding);
-  }, [adding]);
-
-  const readFile = useCallback(async (path: string, filename: string) => {
-    path = path.replace(pathRegex, "/");
-    const response: AxiosResponse<Blob> = await CommandRepository.post(
-      {
-        command: "read",
-        arguments: { path, name: filename },
-      },
-      { responseType: "blob" }
-    );
-    const href = URL.createObjectURL(response.data);
-    setDisplay(href);
+  const readFile = useCallback((path: string, filename: string) => {
+    console.log("reading file");
+    ApiService.readFile(path, filename).then((href) => setDisplay(href));
   }, []);
 
-  const load = useCallback(
-    (path: string, force?: boolean) => {
-      path = path.replace(pathRegex, "/");
-
-      const splittedPath = path.split("/");
-
-      let obj = cloneDeep(element);
-      let holder: Element | undefined = obj;
-      for (let p of splittedPath) {
-        if (p === "") continue;
-        if (holder && holder.isDir) {
-          holder = holder.subs?.find((x) => x.name === p);
-        }
-      }
-
-      if (holder?.isDir && holder.subs && holder.subs.length > 0 && !force) {
-        return;
-      }
-
-      CommandRepository.postAndGetData<Element[]>({
-        command: "ls",
-        arguments: { path },
-      })
-        .then((e) => {
-          if (holder?.isDir) {
-            holder.subs = e;
-          }
-          setElement(obj);
-        })
-        .catch(() => setElement(fileStructure));
-    },
-    [element]
-  );
+  const load = useCallback((path: string, force?: boolean) => {
+    console.log("loading.path", path);
+    ApiService.load(element, path, force).then((e) => setElement(e));
+  }, []);
 
   const createFile = useCallback(
-    async (path: string, filename: string, content: string): Promise<void> => {
-      await CommandRepository.postAndGetData({
-        command: "mkfile",
-        arguments: {
-          path,
-          name: filename,
-          content,
-        } satisfies CreateFileRequest,
-      });
+    (path: string, filename: string, content: string) => {
+      console.log("creating file");
+      return ApiService.createFile(path, filename, content);
     },
     []
   );
 
-  const createDirectory = useCallback(async (path: string): Promise<void> => {
-    path = path.replace(pathRegex, "/");
-    await CommandRepository.postAndGetData({
-      command: "mkdir",
-      arguments: {
-        path,
-      } satisfies CreateDirRequest,
-    });
+  const createDirectory = useCallback((path: string) => {
+    console.log("creating directory");
+    return ApiService.createDirectory(path);
+  }, []);
+
+  const deleteDirectory = useCallback((path: string) => {
+    console.log("deleting directory");
+    return ApiService.deleteDirectory(path);
   }, []);
 
   useEffect(() => {
     load("/");
-  }, []);
+  }, [load]);
 
   const getTree = useCallback(
     (path: string, elements: Element[]): ReactNode => {
@@ -132,6 +79,7 @@ function FileManager() {
         const localPath = path + element.name;
         return (
           <TreeItem
+            key={localPath}
             itemId={localPath}
             label={
               <FileTreeItem
@@ -140,13 +88,9 @@ function FileManager() {
                 setAdding={addItem}
               />
             }
-            onClick={() => {
-              if (element.isDir) {
-                load(localPath);
-              } else {
-                readFile(path, element.name);
-              }
-            }}
+            onClick={() =>
+              element.isDir ? load(localPath) : readFile(path, element.name)
+            }
           >
             {adding && adding.path === localPath && (
               <TreeItem
@@ -158,9 +102,7 @@ function FileManager() {
                         size="small"
                         value={adding.name}
                         onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           setAdding((p) => ({
                             ...p!,
@@ -207,18 +149,14 @@ function FileManager() {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (!adding) return;
-                        let promise: Promise<void>;
-                        if (adding.type === "dir") {
-                          promise = createDirectory(
-                            adding.path + "/" + adding!.name
-                          );
-                        } else {
-                          promise = createFile(
-                            adding.path,
-                            adding.name,
-                            adding.content
-                          );
-                        }
+                        let promise =
+                          adding.type === "dir"
+                            ? createDirectory(`${adding.path}/${adding!.name}`)
+                            : createFile(
+                                adding.path,
+                                adding.name,
+                                adding.content
+                              );
                         promise.then((_) => {
                           setAdding(undefined);
                           load(localPath, true);

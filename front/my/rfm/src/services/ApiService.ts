@@ -10,7 +10,7 @@ const pathRegex = RegExp("/{2,}", "g");
 class ApiService {
   private static instance: ApiService;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): ApiService {
     if (!ApiService.instance) {
@@ -31,34 +31,50 @@ class ApiService {
     return URL.createObjectURL(response.data);
   }
 
-  public async load(element: Element, path: string, force?: boolean) {
+  public async load(element: Element, path: string, force?: boolean): Promise<Element> {
+    console.log("given element", element);
+
     path = path.replace(pathRegex, "/");
 
     const splittedPath = path.split("/");
 
     let obj = cloneDeep(element);
     let holder: Element | undefined = obj;
+    console.log("prev holder", holder);
+
     for (let p of splittedPath) {
       if (p !== "" && holder && holder.isDir) {
-        holder = holder.subs?.find((x) => x.name === p);
+        console.log("p", p)
+
+        holder = holder.subs?.find((x) => {
+          console.log("x", x);
+          return x.name === p
+        });
       }
     }
 
     if (holder?.isDir && holder.subs && holder.subs.length > 0 && !force) {
+      console.log("vai retornar vazio", holder);
+      
       return fileStructure;
     }
 
-    return CommandRepository.postAndGetData<Element[]>({
+    let elements: Element[] = await CommandRepository.postAndGetData<Element[]>({
       command: "ls",
       arguments: { path },
-    })
-      .then((e) => {
-        if (holder?.isDir) {
-          holder.subs = e;
-        }
-        return element;
-      })
-      .catch(() => fileStructure);
+    });
+
+
+    console.log("e", elements);
+    console.log("holder", holder);
+
+    if (holder?.isDir) {
+      holder.subs = elements;
+    }
+
+    console.log("obj", obj);
+    
+    return obj
   }
 
   public async createFile(
@@ -88,7 +104,7 @@ class ApiService {
 
   public async deleteDirectory(path: string) {
     path = path.replace(pathRegex, "/")
-    return ;
+    return;
   }
 }
 

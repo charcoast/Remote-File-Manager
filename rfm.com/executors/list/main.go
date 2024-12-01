@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/rs/cors"
-	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	_ "os"
+	_ "slices"
+	"strconv"
+
+	"github.com/rs/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"rfm.com/common"
 	"rfm.com/executors/list/api"
 	_ "rfm.com/executors/list/docs"
 	_ "rfm.com/executors/list/model"
-	_ "slices"
-	"strconv"
 )
 
 var SelfPort = common.GetRandomPort()
@@ -45,6 +46,20 @@ func communicateDiscovery() {
 	featureRegister := common.FeatureRegister{Port: SelfPort, Commands: commands}
 	common.CommunicateDiscovery(featureRegister)
 }
+
+// func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Set("Access-Control-Allow-Origin", "*")
+// 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+// 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+// 		// Handle preflight requests
+// 		if r.Method == http.MethodOptions {
+// 			w.WriteHeader(http.StatusOK)
+// 			return
+// 		}
+// 		next.ServeHTTP(w, r)
+// 	}
+// }
 
 func sysOut(value interface{}) {
 	fmt.Println(value)

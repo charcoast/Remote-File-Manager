@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"slices"
+	"strconv"
+	"strings"
+
 	"github.com/rs/cors"
 	"github.com/thoas/go-funk"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"io"
-	"net"
-	"net/http"
 	"rfm.com/common"
 	"rfm.com/discovery/model"
-	"slices"
-	"strconv"
-	"strings"
 )
 
 const DiscoveryPort = 7070
@@ -27,11 +28,9 @@ var c *cors.Cors
 var db *gorm.DB = nil
 
 func main() {
-
 	initDB()
-
 	fmt.Println("****RUNNING****")
-	c = cors.New(cors.Options{AllowedOrigins: []string{"http://167.234.232.150"},
+	c = cors.New(cors.Options{AllowedOrigins: []string{"http://167.234.232.150", "http://localhost:5173"},
 		AllowCredentials: true,
 		Debug:            true})
 

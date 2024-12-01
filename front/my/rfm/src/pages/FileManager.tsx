@@ -6,8 +6,10 @@ import { Check, Close } from "@mui/icons-material";
 import backgroundImage from "../assets/background.png";
 import { FileTreeItem } from "../components/FileTreeItem.tsx";
 import ApiService from "../services/ApiService.ts";
+import { fileStructure } from "../mock/mock.tsx";
 
 function FileManager() {
+  
   const [element, setElement] = useState<Element>({
     name: "/",
     isDir: true,
@@ -18,12 +20,12 @@ function FileManager() {
 
   const [adding, setAdding] = useState<
     | ({ name: string; path: string } & (
-        | { type: "dir" }
-        | {
-            type: "file";
-            content: string;
-          }
-      ))
+      | { type: "dir" }
+      | {
+        type: "file";
+        content: string;
+      }
+    ))
     | undefined
   >();
 
@@ -31,14 +33,18 @@ function FileManager() {
     item: { name: string; path: string } & (
       | { type: "dir" }
       | {
-          type: "file";
-          content: string;
-        }
+        type: "file";
+        content: string;
+      }
       | undefined
     )
   ) => {
     setAdding(item);
   };
+
+  useEffect(() => {
+    console.log(adding);
+  }, [adding]);
 
   const readFile = useCallback((path: string, filename: string) => {
     console.log("reading file");
@@ -47,15 +53,19 @@ function FileManager() {
 
   const load = useCallback((path: string, force?: boolean) => {
     console.log("loading.path", path);
-    ApiService.load(element, path, force).then((e) => setElement(e));
-  }, []);
+    ApiService.load(element, path, force).then(response => {
+      if (response != fileStructure) {
+        console.log("response", response);
+        setElement(response)
+      }
+    }).catch(() => setElement(fileStructure))
+  }, [element])
 
   const createFile = useCallback(
     (path: string, filename: string, content: string) => {
       console.log("creating file");
       return ApiService.createFile(path, filename, content);
-    },
-    []
+    }, []
   );
 
   const createDirectory = useCallback((path: string) => {
@@ -69,8 +79,11 @@ function FileManager() {
   }, []);
 
   useEffect(() => {
+    console.log("element", element);
     load("/");
-  }, [load]);
+  }, []);
+
+
 
   const getTree = useCallback(
     (path: string, elements: Element[]): ReactNode => {
@@ -153,10 +166,10 @@ function FileManager() {
                           adding.type === "dir"
                             ? createDirectory(`${adding.path}/${adding!.name}`)
                             : createFile(
-                                adding.path,
-                                adding.name,
-                                adding.content
-                              );
+                              adding.path,
+                              adding.name,
+                              adding.content
+                            );
                         promise.then((_) => {
                           setAdding(undefined);
                           load(localPath, true);

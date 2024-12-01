@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
+	"strings"
+
 	"rfm.com/common"
 	"rfm.com/executors/list/model"
-	"strings"
 )
 
 // GetDirectories
@@ -78,5 +80,6 @@ func returnJsonObject(w *http.ResponseWriter, data any) error {
 }
 
 func throwNewListException(exception, message string) model.ListException {
+	fmt.Println("ocorreu um erro: ", exception, " causa: ", message)
 	return model.ListException{Exception: exception, Details: message}
 }

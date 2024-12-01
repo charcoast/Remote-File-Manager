@@ -1,3 +1,7 @@
 export type Element = {
   name: string;
-} & ({ isDir: false } | { isDir: true; subs?: Element[] });
+} &
+  (
+    { isDir: false } |
+    { isDir: true; subs?: Element[], isOpen?: boolean }
+  );

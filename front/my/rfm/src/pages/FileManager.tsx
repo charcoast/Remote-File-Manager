@@ -1,15 +1,18 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { Element } from "../model/Element.ts";
-import { SimpleTreeView, TreeItem } from "@mui/x-tree-view";
+import { SimpleTreeView, TreeItem, useTreeViewApiRef } from "@mui/x-tree-view";
 import { Box, Grid, IconButton, Paper, styled, TextField } from "@mui/material";
 import { Check, Close } from "@mui/icons-material";
 import backgroundImage from "../assets/background.png";
 import { FileTreeItem } from "../components/FileTreeItem.tsx";
 import ApiService from "../services/ApiService.ts";
 import { fileStructure } from "../mock/mock.tsx";
+import { MacButtons } from "../components/MacButtons.tsx";
 
 function FileManager() {
-  
+
+  const [expanded, setExpanded] = useState<string[]>([]);
+
   const [element, setElement] = useState<Element>({
     name: "/",
     isDir: true,
@@ -29,6 +32,8 @@ function FileManager() {
     | undefined
   >();
 
+  const apiRef = useTreeViewApiRef();
+
   const addItem = (
     item: { name: string; path: string } & (
       | { type: "dir" }
@@ -40,6 +45,12 @@ function FileManager() {
     )
   ) => {
     setAdding(item);
+  };
+
+  const handleToggle = (event: React.ChangeEvent<{}>, itemId: string, isExpanded: boolean) => {
+    let state: string[] = [...expanded]
+    state.push(itemId)
+    setExpanded(state);
   };
 
   useEffect(() => {
@@ -83,8 +94,6 @@ function FileManager() {
     load("/");
   }, []);
 
-
-
   const getTree = useCallback(
     (path: string, elements: Element[]): ReactNode => {
       path = `${path}/`;
@@ -101,8 +110,14 @@ function FileManager() {
                 setAdding={addItem}
               />
             }
-            onClick={() =>
-              element.isDir ? load(localPath) : readFile(path, element.name)
+            onClick={(event) => {
+              event.stopPropagation();
+              if (element.isDir) {
+                load(localPath)
+              } else {
+                readFile(path, element.name)
+              }
+            }
             }
           >
             {adding && adding.path === localPath && (
@@ -195,21 +210,53 @@ function FileManager() {
     [element, adding]
   );
 
+  const [scale, setScale] = useState<number>(1);
+
+  const adjustIframeScale = useCallback(() => {
+    const iframe = document.querySelector<HTMLIFrameElement>("iframe");
+    if (!iframe || !iframe.contentWindow) return;
+
+    const iframeDocument = iframe.contentWindow.document;
+    const contentWidth = iframeDocument.body.scrollWidth;
+    const contentHeight = iframeDocument.body.scrollHeight;
+
+    const container = iframe.parentElement; // Get the parent container (main box)
+    if (!container) return;
+
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+
+    // Calculate scaling factor based on container vs content sizes
+    const scaleWidth = containerWidth / contentWidth;
+    const scaleHeight = containerHeight / contentHeight;
+
+    // Use the smaller of the two to fit content within the container
+    const newScale = Math.min(scaleWidth, scaleHeight);
+
+    // Apply scaling and set state
+    setScale(newScale);
+  }, []);
+
+  useEffect(() => {
+    // Adjust scaling when the iframe is loaded or resized
+    const iframe = document.querySelector("iframe");
+    if (iframe) {
+      iframe.onload = adjustIframeScale; // Run scaling adjustment after iframe loads
+    }
+
+    // Adjust scaling when the window is resized
+    window.addEventListener("resize", adjustIframeScale);
+
+    return () => {
+      window.removeEventListener("resize", adjustIframeScale);
+    };
+  }, [adjustIframeScale]);
+
   const GradientBox = styled(Box)({
     height: "100vh",
     padding: "2rem",
     color: "#27272a",
     backgroundImage: `url(${backgroundImage})`,
-  });
-
-  const CircleButton = styled(IconButton)({
-    width: "1rem",
-    height: "1rem",
-    borderRadius: "50%",
-    backgroundColor: "#d1d5db",
-    "&:hover": {
-      backgroundColor: "#e0e0e0",
-    },
   });
 
   return (
@@ -233,33 +280,11 @@ function FileManager() {
               padding: "1rem",
             }}
           >
-            <Grid container spacing={1} sx={{ marginBottom: "5%" }}>
-              <Grid item>
-                <CircleButton
-                  sx={{
-                    backgroundColor: "#FF464F",
-                    "&:hover": { backgroundColor: "#FF464F" },
-                  }}
-                />
-              </Grid>
-              <Grid item>
-                <CircleButton
-                  sx={{
-                    backgroundColor: "#FFB41B",
-                    "&:hover": { backgroundColor: "#FFB41B" },
-                  }}
-                />
-              </Grid>
-              <Grid item>
-                <CircleButton
-                  sx={{
-                    backgroundColor: "#20CA2D",
-                    "&:hover": { backgroundColor: "#20CA2D" },
-                  }}
-                />
-              </Grid>
-            </Grid>
+            <MacButtons />
             <SimpleTreeView
+              apiRef={apiRef}
+              expandedItems={expanded}
+              onItemExpansionToggle={handleToggle}
               sx={{
                 maxHeight: "95%",
                 overflow: "auto",
@@ -270,11 +295,18 @@ function FileManager() {
           </Box>
           <Box component="main" sx={{ padding: "1rem", flexGrow: 1 }}>
             {display && (
-              <iframe
-                src={display}
-                seamless={true}
-                style={{ overflow: "auto", height: "90%", width: "70%" }}
-              ></iframe>
+        <iframe
+        src={display}
+        seamless
+        style={{
+          overflow: "auto",
+          border: "none",
+          transform: `scale(${scale})`, // Apply dynamic scaling
+          transformOrigin: "0 0", // Set scaling origin to top-left
+          width: `${100 / scale}%`, // Compensate for scaling
+          height: `${100 / scale}%`, // Compensate for scaling
+        }}
+      ></iframe>
             )}
           </Box>
         </Box>

@@ -3,7 +3,7 @@ import { CommandRepository } from "../repository/CommandRepository";
 import _, { cloneDeep } from "lodash";
 import { Element } from "../model/Element";
 import { fileStructure } from "../mock/mock.tsx";
-import { CreateDirRequest, CreateFileRequest } from "../model/Command.ts";
+import { CreateDirRequest, CreateFileRequest, DeleteDirRequest, DeleteFileRequest } from "../model/Command.ts";
 
 const pathRegex = RegExp("/{2,}", "g");
 
@@ -55,7 +55,7 @@ class ApiService {
 
     if (holder?.isDir && holder.subs && holder.subs.length > 0 && !force) {
       console.log("vai retornar vazio", holder);
-      
+
       return fileStructure;
     }
 
@@ -73,7 +73,7 @@ class ApiService {
     }
 
     console.log("obj", obj);
-    
+
     return obj
   }
 
@@ -102,9 +102,25 @@ class ApiService {
     });
   }
 
-  public async deleteDirectory(path: string) {
+  public async deleteDirectory(path: string): Promise<void> {
     path = path.replace(pathRegex, "/")
-    return;
+    return await CommandRepository.postAndGetData({
+      command: "rmdir",
+      arguments: {
+        path
+      } satisfies DeleteDirRequest
+    })
+  }
+
+  public async deleteFile(path: string, filename: string): Promise<void> {
+    path = path.replace(pathRegex, "/")
+    return await CommandRepository.postAndGetData({
+      command: "rmdir",
+      arguments: {
+        path,
+        filename
+      } satisfies DeleteFileRequest
+    })
   }
 }
 

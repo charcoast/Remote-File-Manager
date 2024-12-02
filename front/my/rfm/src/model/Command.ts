@@ -12,3 +12,12 @@ export type CreateFileRequest = {
 export type CreateDirRequest = {
   path: string;
 };
+
+export type DeleteDirRequest = {
+  path: string;
+}
+
+export type DeleteFileRequest = {
+  path: string;
+  filename: string;
+}

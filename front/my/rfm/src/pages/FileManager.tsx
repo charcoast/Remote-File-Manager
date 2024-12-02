@@ -1,13 +1,14 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { Element } from "../model/Element.ts";
 import { SimpleTreeView, TreeItem, useTreeViewApiRef } from "@mui/x-tree-view";
-import { Box, Grid, IconButton, Paper, styled, TextField } from "@mui/material";
+import { Box, IconButton, Paper, styled, TextField } from "@mui/material";
 import { Check, Close } from "@mui/icons-material";
 import backgroundImage from "../assets/background.png";
 import { FileTreeItem } from "../components/FileTreeItem.tsx";
 import ApiService from "../services/ApiService.ts";
 import { fileStructure } from "../mock/mock.tsx";
 import { MacButtons } from "../components/MacButtons.tsx";
+import ConfirmationDialog from "../components/ConfirmationDialog.tsx";
 
 function FileManager() {
 
@@ -32,6 +33,19 @@ function FileManager() {
     | undefined
   >();
 
+  const [deleting, setDeleting] = useState<
+    (
+      { path: string }
+      & (
+        | { type: "dir" }
+        | {
+          type: "file";
+          filename: string;
+        }
+        | undefined
+      )
+    )>();
+
   const apiRef = useTreeViewApiRef();
 
   const addItem = (
@@ -47,9 +61,26 @@ function FileManager() {
     setAdding(item);
   };
 
+  const deleteItem = (item: { path: string }
+    & (
+      | { type: "dir" }
+      | {
+        type: "file";
+        filename: string;
+      }
+      | undefined
+    )) => {
+    setDeleting(item)
+    setShowConfirmationDialog(true)
+  }
+
   const handleToggle = (event: React.ChangeEvent<{}>, itemId: string, isExpanded: boolean) => {
     let state: string[] = [...expanded]
-    state.push(itemId)
+    if (state.includes(itemId)) {
+      state = state.filter(element => element  !== itemId)
+    } else {
+      state.push(itemId)
+    }
     setExpanded(state);
   };
 
@@ -89,6 +120,20 @@ function FileManager() {
     return ApiService.deleteDirectory(path);
   }, []);
 
+  const deleteFile = useCallback((path: string, filename: string) => {
+    console.log("deleting file");
+    return ApiService.deleteFile(path, filename);
+  }, [])
+
+  const handleChangeAddingValue = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAdding((p) => ({
+      ...p!,
+      name: e.target.value.replace(RegExp("[/.]"), ""),
+    }));
+    e.stopPropagation();
+
+  }
+
   useEffect(() => {
     console.log("element", element);
     load("/");
@@ -108,6 +153,7 @@ function FileManager() {
                 element={element}
                 localPath={localPath}
                 setAdding={addItem}
+                setDeleting={deleteItem}
               />
             }
             onClick={(event) => {
@@ -131,13 +177,9 @@ function FileManager() {
                         value={adding.name}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          setAdding((p) => ({
-                            ...p!,
-                            name: e.target.value.replace(RegExp("[/.]"), ""),
-                          }));
-                          e.stopPropagation();
-                        }}
+                        onChange={handleChangeAddingValue}
+                        focused={true}
+                        autoFocus={true}
                       />
                       {adding.type === "file" && (
                         <input
@@ -210,6 +252,8 @@ function FileManager() {
     [element, adding]
   );
 
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+
   const [scale, setScale] = useState<number>(1);
 
   const adjustIframeScale = useCallback(() => {
@@ -260,58 +304,83 @@ function FileManager() {
   });
 
   return (
-    <GradientBox>
-      <Paper
-        elevation={1}
-        sx={{
-          height: "100%",
-          borderRadius: "1rem",
-          overflow: "hidden",
-          border: "1px solid rgba(0, 0, 0, 0.2)",
-        }}
-      >
-        <Box sx={{ height: "100%", display: "flex", flexDirection: "row" }}>
-          <Box
-            sx={{
-              height: "100%",
-              width: "30%",
-              backgroundColor: "#f9fafb",
-              borderRight: "1px solid #e5e7eb",
-              padding: "1rem",
-            }}
-          >
-            <MacButtons />
-            <SimpleTreeView
-              apiRef={apiRef}
-              expandedItems={expanded}
-              onItemExpansionToggle={handleToggle}
+    <>
+      <GradientBox>
+        <Paper
+          elevation={1}
+          sx={{
+            height: "100%",
+            borderRadius: "1rem",
+            overflow: "hidden",
+            border: "1px solid rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <Box sx={{ height: "100%", display: "flex", flexDirection: "row" }}>
+            <Box
               sx={{
-                maxHeight: "95%",
-                overflow: "auto",
+                height: "100%",
+                width: "30%",
+                backgroundColor: "#f9fafb",
+                borderRight: "1px solid #e5e7eb",
+                padding: "1rem",
               }}
             >
-              {getTree("/", element.isDir ? (element.subs ?? []) : [])}
-            </SimpleTreeView>
+              <MacButtons />
+              <SimpleTreeView
+                apiRef={apiRef}
+                expandedItems={expanded}
+                onItemExpansionToggle={handleToggle}
+                sx={{
+                  maxHeight: "95%",
+                  overflow: "auto",
+                }}
+              >
+                {getTree("/", element.isDir ? (element.subs ?? []) : [])}
+              </SimpleTreeView>
+            </Box>
+            <Box component="main" sx={{ padding: "1rem", flexGrow: 1 }}>
+              {display && (
+                <iframe
+                  src={display}
+                  seamless
+                  style={{
+                    overflow: "auto",
+                    border: "none",
+                    transform: `scale(${scale})`, // Apply dynamic scaling
+                    transformOrigin: "0 0", // Set scaling origin to top-left
+                    width: `${100 / scale}%`, // Compensate for scaling
+                    height: `${100 / scale}%`, // Compensate for scaling
+                  }}
+                ></iframe>
+              )}
+            </Box>
           </Box>
-          <Box component="main" sx={{ padding: "1rem", flexGrow: 1 }}>
-            {display && (
-        <iframe
-        src={display}
-        seamless
-        style={{
-          overflow: "auto",
-          border: "none",
-          transform: `scale(${scale})`, // Apply dynamic scaling
-          transformOrigin: "0 0", // Set scaling origin to top-left
-          width: `${100 / scale}%`, // Compensate for scaling
-          height: `${100 / scale}%`, // Compensate for scaling
-        }}
-      ></iframe>
-            )}
-          </Box>
-        </Box>
-      </Paper>
-    </GradientBox>
+        </Paper>
+      </GradientBox>
+      {deleting && (
+        <ConfirmationDialog
+          open={showConfirmationDialog}
+          handleClose={() => setShowConfirmationDialog(false)}
+          handleConfirm={() => {
+            if (!deleting) return;
+            let promise =
+              deleting.type === "dir"
+                ? deleteDirectory(deleting.path)
+                : deleteFile(
+                  deleting.path,
+                  deleting.filename
+                );
+            const pathParts = deleting.path.split('/');
+            const penultimatePathParts = pathParts.slice(0, -1);
+            const penultimatePath = penultimatePathParts.join('/')
+            promise.then((_) => {
+              setAdding(undefined);
+              load(penultimatePath, true);
+            });
+            setShowConfirmationDialog(false)
+          }} />
+      )}
+    </>
   );
 }
 

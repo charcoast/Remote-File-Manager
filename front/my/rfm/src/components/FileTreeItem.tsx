@@ -15,11 +15,22 @@ interface FileTreeItemProps {
     item: { name: string; path: string } & (
       | { type: "dir" }
       | {
-          type: "file";
-          content: string;
-        }
+        type: "file";
+        content: string;
+      }
       | undefined
     )
+  ) => void;
+  setDeleting: (
+    params: { path: string }
+      & (
+        | { type: "dir" }
+        | {
+          type: "file";
+          filename: string;
+        }
+        | undefined
+      )
   ) => void;
 }
 
@@ -27,6 +38,7 @@ export const FileTreeItem: React.FC<FileTreeItemProps> = ({
   element,
   localPath,
   setAdding,
+  setDeleting
 }) => {
   return (
     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -64,6 +76,20 @@ export const FileTreeItem: React.FC<FileTreeItemProps> = ({
           )}
           <IconButton
             onClick={(e) => {
+              console.log("chamou o delete");
+
+              if (element.isDir) {
+                setDeleting({
+                  path: localPath,
+                  type: "dir"
+                })
+              } else {
+                setDeleting({
+                  path: localPath,
+                  type: "file",
+                  filename: element.name
+                })
+              }
               e.stopPropagation();
             }}
           >

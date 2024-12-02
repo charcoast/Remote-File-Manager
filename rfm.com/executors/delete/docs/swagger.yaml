@@ -1,0 +1,92 @@
+basePath: /
+definitions:
+  model.CreateException:
+    properties:
+      details:
+        type: string
+      exception:
+        type: string
+    type: object
+  model.CreateRequest:
+    properties:
+      content:
+        type: string
+      name:
+        type: string
+      path:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is one of the executors that works in the Remote-File-Manager
+    application.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Remote-File-Manager - Create Executor
+  version: "1.0"
+paths:
+  /create/directory:
+    post:
+      consumes:
+      - application/json
+      description: Create a file int a given path
+      operationId: create-directory
+      parameters:
+      - description: The information about the file to be created
+        in: body
+        name: CreateRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: Can not create the directory
+          schema:
+            $ref: '#/definitions/model.CreateException'
+        "404":
+          description: Can not create the directory
+          schema:
+            $ref: '#/definitions/model.CreateException'
+      summary: Create a file
+  /create/file:
+    post:
+      consumes:
+      - application/json
+      description: Create a file int a given path
+      operationId: create-file
+      parameters:
+      - description: The information about the file to be created
+        in: body
+        name: CreateRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: Can not create the file
+          schema:
+            $ref: '#/definitions/model.CreateException'
+        "404":
+          description: Can not create the file
+          schema:
+            $ref: '#/definitions/model.CreateException'
+      summary: Create a file
+swagger: "2.0"

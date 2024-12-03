@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { Element } from "../model/Element.ts";
 import { SimpleTreeView, TreeItem, useTreeViewApiRef } from "@mui/x-tree-view";
-import { Box, IconButton, Paper, styled, TextField } from "@mui/material";
+import { Box, IconButton, Paper, styled, TextField, Typography } from "@mui/material";
 import { Check, Close } from "@mui/icons-material";
 import backgroundImage from "../assets/background.png";
 import { FileTreeItem } from "../components/FileTreeItem.tsx";
@@ -9,6 +9,8 @@ import ApiService from "../services/ApiService.ts";
 import { fileStructure } from "../mock/mock.tsx";
 import { MacButtons } from "../components/MacButtons.tsx";
 import ConfirmationDialog from "../components/ConfirmationDialog.tsx";
+import LinearIndeterminate from "../components/LinearIndeterminate.tsx";
+import CircularIndeterminate from "../components/CircularIndeterminate.tsx";
 
 function FileManager() {
 
@@ -77,7 +79,7 @@ function FileManager() {
   const handleToggle = (event: React.ChangeEvent<{}>, itemId: string, isExpanded: boolean) => {
     let state: string[] = [...expanded]
     if (state.includes(itemId)) {
-      state = state.filter(element => element  !== itemId)
+      state = state.filter(element => element !== itemId)
     } else {
       state.push(itemId)
     }
@@ -88,17 +90,28 @@ function FileManager() {
     console.log(adding);
   }, [adding]);
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [isReading, setIsReading] = useState(false);
+
   const readFile = useCallback((path: string, filename: string) => {
+    setIsReading(true);
     console.log("reading file");
-    ApiService.readFile(path, filename).then((href) => setDisplay(href));
+    ApiService.readFile(path, filename).then((href) => {
+      setDisplay(href)
+      setIsReading(false);
+    }
+    );
   }, []);
 
   const load = useCallback((path: string, force?: boolean) => {
+    setIsLoading(true);
     console.log("loading.path", path);
     ApiService.load(element, path, force).then(response => {
       if (response != fileStructure) {
         console.log("response", response);
         setElement(response)
+        setIsLoading(false);
       }
     }).catch(() => setElement(fileStructure))
   }, [element])
@@ -326,6 +339,7 @@ function FileManager() {
               }}
             >
               <MacButtons />
+              {isLoading && (<LinearIndeterminate />)}
               <SimpleTreeView
                 apiRef={apiRef}
                 expandedItems={expanded}
@@ -338,8 +352,23 @@ function FileManager() {
                 {getTree("/", element.isDir ? (element.subs ?? []) : [])}
               </SimpleTreeView>
             </Box>
-            <Box component="main" sx={{ padding: "1rem", flexGrow: 1 }}>
-              {display && (
+            <Box component="main" sx={
+              {
+                padding: "1rem",
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "row",
+                flexWrap: "nowrap",
+                alignContent: "center",
+                justifyContent: "center",
+                alignItems: "center",
+              }
+            }>
+              {!isReading && !display && (
+                <Typography sx={{ fontSize: "100%", fontWeight: "bold", color: "#a5a5a5" }}>Selecione um Arquivo para visualizar</Typography>
+              )}
+              {isReading && <CircularIndeterminate />}
+              {!isReading && display && (
                 <iframe
                   src={display}
                   seamless

@@ -212,7 +212,7 @@ function FileManager() {
                         focused={true}
                         autoFocus={true}
                         sx={{ marginRight: ".5rem" }}
-                        placeholder="Informe o nome do arquivo..."
+                        placeholder="Informe o nome..."
                       />
                       {adding.type === "file" && (
                         <UploadButtton

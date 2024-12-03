@@ -11,6 +11,7 @@ import { MacButtons } from "../components/MacButtons.tsx";
 import ConfirmationDialog from "../components/ConfirmationDialog.tsx";
 import LinearIndeterminate from "../components/LinearIndeterminate.tsx";
 import CircularIndeterminate from "../components/CircularIndeterminate.tsx";
+import UploadButtton from "../components/UploadButton.tsx";
 
 function FileManager() {
 
@@ -194,12 +195,12 @@ function FileManager() {
                         onChange={handleChangeAddingValue}
                         focused={true}
                         autoFocus={true}
+                        sx={{ marginRight: ".5rem" }}
+                        placeholder="Informe o nome do arquivo..."
                       />
                       {adding.type === "file" && (
-                        <input
-                          type="file"
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={async (e) => {
+                        <UploadButtton
+                          handleUpload={async (e: { target: { files: any; }; stopPropagation: () => void; }) => {
                             const files = e.target.files;
                             if (files && files.length > 0) {
                               const fileReader = new FileReader();

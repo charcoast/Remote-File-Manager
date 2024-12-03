@@ -111,8 +111,8 @@ function FileManager() {
       if (response != fileStructure) {
         console.log("response", response);
         setElement(response)
-        setIsLoading(false);
       }
+      setIsLoading(false);
     }).catch(() => setElement(fileStructure))
   }, [element])
 
@@ -164,6 +164,7 @@ function FileManager() {
             label={
               <FileTreeItem
                 element={element}
+                isExpanded={expanded.includes(localPath)}
                 localPath={localPath}
                 setAdding={addItem}
                 setDeleting={deleteItem}
@@ -183,7 +184,7 @@ function FileManager() {
               <TreeItem
                 itemId={"adding"}
                 label={
-                  <Box display="flex" alignItems="center">
+                  <Box display="flex" flexDirection="column" alignItems="flex-start">
                     <Box>
                       <TextField
                         size="small"
@@ -220,34 +221,36 @@ function FileManager() {
                         />
                       )}
                     </Box>
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAdding(undefined);
-                      }}
-                    >
-                      <Close />
-                    </IconButton>
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!adding) return;
-                        let promise =
-                          adding.type === "dir"
-                            ? createDirectory(`${adding.path}/${adding!.name}`)
-                            : createFile(
-                              adding.path,
-                              adding.name,
-                              adding.content
-                            );
-                        promise.then((_) => {
+                    <Box display="flex" flexDirection="row" >
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setAdding(undefined);
-                          load(localPath, true);
-                        });
-                      }}
-                    >
-                      <Check />
-                    </IconButton>
+                        }}
+                      >
+                        <Close />
+                      </IconButton>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!adding) return;
+                          let promise =
+                            adding.type === "dir"
+                              ? createDirectory(`${adding.path}/${adding!.name}`)
+                              : createFile(
+                                adding.path,
+                                adding.name,
+                                adding.content
+                              );
+                          promise.then((_) => {
+                            setAdding(undefined);
+                            load(localPath, true);
+                          });
+                        }}
+                      >
+                        <Check />
+                      </IconButton>
+                    </Box>
                   </Box>
                 }
               ></TreeItem>
@@ -262,7 +265,7 @@ function FileManager() {
         );
       });
     },
-    [element, adding]
+    [element, adding, expanded]
   );
 
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
@@ -277,31 +280,26 @@ function FileManager() {
     const contentWidth = iframeDocument.body.scrollWidth;
     const contentHeight = iframeDocument.body.scrollHeight;
 
-    const container = iframe.parentElement; // Get the parent container (main box)
+    const container = iframe.parentElement;
     if (!container) return;
 
     const containerWidth = container.offsetWidth;
     const containerHeight = container.offsetHeight;
 
-    // Calculate scaling factor based on container vs content sizes
     const scaleWidth = containerWidth / contentWidth;
     const scaleHeight = containerHeight / contentHeight;
 
-    // Use the smaller of the two to fit content within the container
     const newScale = Math.min(scaleWidth, scaleHeight);
 
-    // Apply scaling and set state
     setScale(newScale);
   }, []);
 
   useEffect(() => {
-    // Adjust scaling when the iframe is loaded or resized
     const iframe = document.querySelector("iframe");
     if (iframe) {
-      iframe.onload = adjustIframeScale; // Run scaling adjustment after iframe loads
+      iframe.onload = adjustIframeScale;
     }
 
-    // Adjust scaling when the window is resized
     window.addEventListener("resize", adjustIframeScale);
 
     return () => {
@@ -375,10 +373,10 @@ function FileManager() {
                   style={{
                     overflow: "auto",
                     border: "none",
-                    transform: `scale(${scale})`, // Apply dynamic scaling
-                    transformOrigin: "0 0", // Set scaling origin to top-left
-                    width: `${100 / scale}%`, // Compensate for scaling
-                    height: `${100 / scale}%`, // Compensate for scaling
+                    transform: `scale(${scale})`,
+                    transformOrigin: "0 0",
+                    width: `${100 / scale}%`,
+                    height: `${100 / scale}%`,
                   }}
                 ></iframe>
               )}
@@ -389,6 +387,16 @@ function FileManager() {
       {deleting && (
         <ConfirmationDialog
           open={showConfirmationDialog}
+          title={deleting.type === "dir"
+            ? "Excluir Pasta"
+            : "Excluir Arquivo"
+          }
+          content={deleting.type === "dir"
+            ? `Deseja realmente excluir esta pasta? 
+            Esta ação não poderá ser desfeita!`
+            : `Deseja realmente excluir este arquivo? 
+            Esta ação não poderá ser desfeita!`
+          }
           handleClose={() => setShowConfirmationDialog(false)}
           handleConfirm={() => {
             if (!deleting) return;

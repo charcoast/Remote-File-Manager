@@ -8,12 +8,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 interface ConfirmationDialogProps {
     open: boolean,
+    title: string,
+    content: string,
     handleClose: () => void,
     handleConfirm: () => void
 }
 
 const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     open,
+    title,
+    content,
     handleClose,
     handleConfirm
 }) => {
@@ -25,12 +29,11 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             aria-describedby="alert-dialog-description"
         >
             <DialogTitle id="alert-dialog-title">
-                {"Use Google's location service?"}
+                {title}
             </DialogTitle>
             <DialogContent>
                 <DialogContentText id="alert-dialog-description">
-                    Let Google help apps determine location. This means sending anonymous
-                    location data to Google, even when no apps are running.
+                    {content}
                 </DialogContentText>
             </DialogContent>
             <DialogActions>

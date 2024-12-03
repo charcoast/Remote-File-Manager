@@ -1,11 +1,18 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { Element } from "../model/Element.ts";
 import { SimpleTreeView, TreeItem, useTreeViewApiRef } from "@mui/x-tree-view";
-import { Box, IconButton, Paper, styled, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Paper,
+  styled,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { Check, Close } from "@mui/icons-material";
 import backgroundImage from "../assets/background.png";
 import { FileTreeItem } from "../components/FileTreeItem.tsx";
-import ApiService from "../services/ApiService.ts";
+import ApiService, { pathRegex } from "../services/ApiService.ts";
 import { fileStructure } from "../mock/mock.tsx";
 import { MacButtons } from "../components/MacButtons.tsx";
 import ConfirmationDialog from "../components/ConfirmationDialog.tsx";
@@ -14,7 +21,6 @@ import CircularIndeterminate from "../components/CircularIndeterminate.tsx";
 import UploadButtton from "../components/UploadButton.tsx";
 
 function FileManager() {
-
   const [expanded, setExpanded] = useState<string[]>([]);
 
   const [element, setElement] = useState<Element>({
@@ -27,27 +33,25 @@ function FileManager() {
 
   const [adding, setAdding] = useState<
     | ({ name: string; path: string } & (
-      | { type: "dir" }
-      | {
-        type: "file";
-        content: string;
-      }
-    ))
+        | { type: "dir" }
+        | {
+            type: "file";
+            content: string;
+          }
+      ))
     | undefined
   >();
 
   const [deleting, setDeleting] = useState<
-    (
-      { path: string }
-      & (
-        | { type: "dir" }
-        | {
+    { path: string } & (
+      | { type: "dir" }
+      | {
           type: "file";
           filename: string;
         }
-        | undefined
-      )
-    )>();
+      | undefined
+    )
+  >();
 
   const apiRef = useTreeViewApiRef();
 
@@ -55,34 +59,39 @@ function FileManager() {
     item: { name: string; path: string } & (
       | { type: "dir" }
       | {
-        type: "file";
-        content: string;
-      }
+          type: "file";
+          content: string;
+        }
       | undefined
-    )
+    ),
   ) => {
     setAdding(item);
   };
 
-  const deleteItem = (item: { path: string }
-    & (
+  const deleteItem = (
+    item: { path: string } & (
       | { type: "dir" }
       | {
-        type: "file";
-        filename: string;
-      }
+          type: "file";
+          filename: string;
+        }
       | undefined
-    )) => {
-    setDeleting(item)
-    setShowConfirmationDialog(true)
-  }
+    ),
+  ) => {
+    setDeleting(item);
+    setShowConfirmationDialog(true);
+  };
 
-  const handleToggle = (event: React.ChangeEvent<{}>, itemId: string, isExpanded: boolean) => {
-    let state: string[] = [...expanded]
+  const handleToggle = (
+    _: React.ChangeEvent<{}>,
+    itemId: string,
+    __: boolean,
+  ) => {
+    let state: string[] = [...expanded];
     if (state.includes(itemId)) {
-      state = state.filter(element => element !== itemId)
+      state = state.filter((element) => element !== itemId);
     } else {
-      state.push(itemId)
+      state.push(itemId);
     }
     setExpanded(state);
   };
@@ -99,29 +108,34 @@ function FileManager() {
     setIsReading(true);
     console.log("reading file");
     ApiService.readFile(path, filename).then((href) => {
-      setDisplay(href)
+      setDisplay(href);
       setIsReading(false);
-    }
-    );
+    });
   }, []);
 
-  const load = useCallback((path: string, force?: boolean) => {
-    setIsLoading(true);
-    console.log("loading.path", path);
-    ApiService.load(element, path, force).then(response => {
-      if (response != fileStructure) {
-        console.log("response", response);
-        setElement(response)
-      }
-      setIsLoading(false);
-    }).catch(() => setElement(fileStructure))
-  }, [element])
+  const load = useCallback(
+    (path: string, force?: boolean) => {
+      setIsLoading(true);
+      console.log("loading.path", path);
+      ApiService.load(element, path, force)
+        .then((response) => {
+          if (response != fileStructure) {
+            console.log("response", response);
+            setElement(response);
+          }
+          setIsLoading(false);
+        })
+        .catch(() => setElement(fileStructure));
+    },
+    [element],
+  );
 
   const createFile = useCallback(
     (path: string, filename: string, content: string) => {
       console.log("creating file");
       return ApiService.createFile(path, filename, content);
-    }, []
+    },
+    [],
   );
 
   const createDirectory = useCallback((path: string) => {
@@ -137,16 +151,15 @@ function FileManager() {
   const deleteFile = useCallback((path: string, filename: string) => {
     console.log("deleting file");
     return ApiService.deleteFile(path, filename);
-  }, [])
+  }, []);
 
   const handleChangeAddingValue = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAdding((p) => ({
       ...p!,
-      name: e.target.value.replace(RegExp("[/.]"), ""),
+      name: e.target.value.replace(RegExp("[/]"), ""),
     }));
     e.stopPropagation();
-
-  }
+  };
 
   useEffect(() => {
     console.log("element", element);
@@ -157,7 +170,7 @@ function FileManager() {
     (path: string, elements: Element[]): ReactNode => {
       path = `${path}/`;
       return elements?.map((element) => {
-        const localPath = path + element.name;
+        const localPath = (path + element.name).replace(pathRegex, "/");
         return (
           <TreeItem
             key={localPath}
@@ -174,19 +187,22 @@ function FileManager() {
             onClick={(event) => {
               event.stopPropagation();
               if (element.isDir) {
-                load(localPath)
+                load(localPath);
               } else {
-                readFile(path, element.name)
+                readFile(path, element.name);
               }
-            }
-            }
+            }}
           >
             {adding && adding.path === localPath && (
               <TreeItem
                 itemId={"adding"}
                 label={
-                  <Box display="flex" flexDirection="column" alignItems="flex-start">
-                    <Box>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="flex-start"
+                  >
+                    <Box onKeyDown={(e) => e.preventDefault()}>
                       <TextField
                         size="small"
                         value={adding.name}
@@ -200,9 +216,13 @@ function FileManager() {
                       />
                       {adding.type === "file" && (
                         <UploadButtton
-                          handleUpload={async (e: { target: { files: any; }; stopPropagation: () => void; }) => {
+                          handleUpload={async (e: {
+                            target: { files: any };
+                            stopPropagation: () => void;
+                          }) => {
                             const files = e.target.files;
-                            if (files && files.length > 0) {
+                            if (files && files.length == 1) {
+                              const uploadFile = files[0];
                               const fileReader = new FileReader();
                               fileReader.onload = () => {
                                 const base64 = (
@@ -210,19 +230,21 @@ function FileManager() {
                                 )
                                   .replace("data:", "")
                                   .replace(/^.+,/, "");
+
                                 setAdding((p) => ({
                                   ...p!,
+                                  name: uploadFile.name,
                                   content: base64,
                                 }));
                               };
-                              fileReader.readAsDataURL(files[0]);
+                              fileReader.readAsDataURL(uploadFile);
                             }
                             e.stopPropagation();
                           }}
                         />
                       )}
                     </Box>
-                    <Box display="flex" flexDirection="row" >
+                    <Box display="flex" flexDirection="row">
                       <IconButton
                         onClick={(e) => {
                           e.stopPropagation();
@@ -237,12 +259,14 @@ function FileManager() {
                           if (!adding) return;
                           let promise =
                             adding.type === "dir"
-                              ? createDirectory(`${adding.path}/${adding!.name}`)
+                              ? createDirectory(
+                                  `${adding.path}/${adding!.name}`,
+                                )
                               : createFile(
-                                adding.path,
-                                adding.name,
-                                adding.content
-                              );
+                                  adding.path,
+                                  adding.name,
+                                  adding.content,
+                                );
                           promise.then((_) => {
                             setAdding(undefined);
                             load(localPath, true);
@@ -266,7 +290,7 @@ function FileManager() {
         );
       });
     },
-    [element, adding, expanded]
+    [element, adding, expanded],
   );
 
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
@@ -338,7 +362,7 @@ function FileManager() {
               }}
             >
               <MacButtons />
-              {isLoading && (<LinearIndeterminate />)}
+              {isLoading && <LinearIndeterminate />}
               <SimpleTreeView
                 apiRef={apiRef}
                 expandedItems={expanded}
@@ -351,8 +375,9 @@ function FileManager() {
                 {getTree("/", element.isDir ? (element.subs ?? []) : [])}
               </SimpleTreeView>
             </Box>
-            <Box component="main" sx={
-              {
+            <Box
+              component="main"
+              sx={{
                 padding: "1rem",
                 flexGrow: 1,
                 display: "flex",
@@ -361,10 +386,18 @@ function FileManager() {
                 alignContent: "center",
                 justifyContent: "center",
                 alignItems: "center",
-              }
-            }>
+              }}
+            >
               {!isReading && !display && (
-                <Typography sx={{ fontSize: "100%", fontWeight: "bold", color: "#a5a5a5" }}>Selecione um Arquivo para visualizar</Typography>
+                <Typography
+                  sx={{
+                    fontSize: "100%",
+                    fontWeight: "bold",
+                    color: "#a5a5a5",
+                  }}
+                >
+                  Selecione um Arquivo para visualizar
+                </Typography>
               )}
               {isReading && <CircularIndeterminate />}
               {!isReading && display && (
@@ -388,14 +421,12 @@ function FileManager() {
       {deleting && (
         <ConfirmationDialog
           open={showConfirmationDialog}
-          title={deleting.type === "dir"
-            ? "Excluir Pasta"
-            : "Excluir Arquivo"
-          }
-          content={deleting.type === "dir"
-            ? `Deseja realmente excluir esta pasta? 
+          title={deleting.type === "dir" ? "Excluir Pasta" : "Excluir Arquivo"}
+          content={
+            deleting.type === "dir"
+              ? `Deseja realmente excluir esta pasta? 
             Esta ação não poderá ser desfeita!`
-            : `Deseja realmente excluir este arquivo? 
+              : `Deseja realmente excluir este arquivo? 
             Esta ação não poderá ser desfeita!`
           }
           handleClose={() => setShowConfirmationDialog(false)}
@@ -404,19 +435,17 @@ function FileManager() {
             let promise =
               deleting.type === "dir"
                 ? deleteDirectory(deleting.path)
-                : deleteFile(
-                  deleting.path,
-                  deleting.filename
-                );
-            const pathParts = deleting.path.split('/');
+                : deleteFile(deleting.path, deleting.filename);
+            const pathParts = deleting.path.split("/");
             const penultimatePathParts = pathParts.slice(0, -1);
-            const penultimatePath = penultimatePathParts.join('/')
+            const penultimatePath = penultimatePathParts.join("/");
             promise.then((_) => {
               setAdding(undefined);
               load(penultimatePath, true);
             });
-            setShowConfirmationDialog(false)
-          }} />
+            setShowConfirmationDialog(false);
+          }}
+        />
       )}
     </>
   );

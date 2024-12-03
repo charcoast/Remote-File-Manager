@@ -3,14 +3,19 @@ import { CommandRepository } from "../repository/CommandRepository";
 import _, { cloneDeep } from "lodash";
 import { Element } from "../model/Element";
 import { fileStructure } from "../mock/mock.tsx";
-import { CreateDirRequest, CreateFileRequest, DeleteDirRequest, DeleteFileRequest } from "../model/Command.ts";
+import {
+  CreateDirRequest,
+  CreateFileRequest,
+  DeleteDirRequest,
+  DeleteFileRequest,
+} from "../model/Command.ts";
 
-const pathRegex = RegExp("/{2,}", "g");
+export const pathRegex = RegExp("/{2,}", "g");
 
 class ApiService {
   private static instance: ApiService;
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): ApiService {
     if (!ApiService.instance) {
@@ -26,12 +31,16 @@ class ApiService {
         command: "read",
         arguments: { path, name: filename },
       },
-      { responseType: "blob" }
+      { responseType: "blob" },
     );
     return URL.createObjectURL(response.data);
   }
 
-  public async load(element: Element, path: string, force?: boolean): Promise<Element> {
+  public async load(
+    element: Element,
+    path: string,
+    force?: boolean,
+  ): Promise<Element> {
     console.log("given element", element);
 
     path = path.replace(pathRegex, "/");
@@ -44,11 +53,11 @@ class ApiService {
 
     for (let p of splittedPath) {
       if (p !== "" && holder && holder.isDir) {
-        console.log("p", p)
+        console.log("p", p);
 
         holder = holder.subs?.find((x) => {
           console.log("x", x);
-          return x.name === p
+          return x.name === p;
         });
       }
     }
@@ -59,11 +68,12 @@ class ApiService {
       return fileStructure;
     }
 
-    let elements: Element[] = await CommandRepository.postAndGetData<Element[]>({
-      command: "ls",
-      arguments: { path },
-    });
-
+    let elements: Element[] = await CommandRepository.postAndGetData<Element[]>(
+      {
+        command: "ls",
+        arguments: { path },
+      },
+    );
 
     console.log("e", elements);
     console.log("holder", holder);
@@ -74,13 +84,13 @@ class ApiService {
 
     console.log("obj", obj);
 
-    return obj
+    return obj;
   }
 
   public async createFile(
     path: string,
     filename: string,
-    content: string
+    content: string,
   ): Promise<void> {
     return await CommandRepository.postAndGetData({
       command: "mkfile",
@@ -103,24 +113,24 @@ class ApiService {
   }
 
   public async deleteDirectory(path: string): Promise<void> {
-    path = path.replace(pathRegex, "/")
-    return await CommandRepository.postAndGetData({
-      command: "rmdir",
-      arguments: {
-        path
-      } satisfies DeleteDirRequest
-    })
-  }
-
-  public async deleteFile(path: string, filename: string): Promise<void> {
-    path = path.replace(pathRegex, "/")
+    path = path.replace(pathRegex, "/");
     return await CommandRepository.postAndGetData({
       command: "rmdir",
       arguments: {
         path,
-        filename
-      } satisfies DeleteFileRequest
-    })
+      } satisfies DeleteDirRequest,
+    });
+  }
+
+  public async deleteFile(path: string, filename: string): Promise<void> {
+    path = path.replace(pathRegex, "/");
+    return await CommandRepository.postAndGetData({
+      command: "rmdir",
+      arguments: {
+        path,
+        filename,
+      } satisfies DeleteFileRequest,
+    });
   }
 }
 

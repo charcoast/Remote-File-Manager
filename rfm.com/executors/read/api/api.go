@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/gabriel-vasile/mimetype"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -93,7 +94,11 @@ func GetFileContentType(path string) (string, error) {
 	}
 
 	// the function that actually does the trick
-	contentType := http.DetectContentType(buf)
+	contentType := mimetype.Detect(buf).String()
+
+	//if err != nil {
+	//	contentType = http.DetectContentType(buf)
+	//}
 
 	return contentType, nil
 }
